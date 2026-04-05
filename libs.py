@@ -3,8 +3,9 @@
 #--------------------------------------------------------
 import numpy as np # NumPy
 import scipy.stats as stats # SciPy (estadística avanzada)
-import pandas as pd # pandas (tablas y estadísticas descriptivas)
+#import pandas as pd # pandas (tablas y estadísticas descriptivas)
 import matplotlib.pyplot as plt # Matplotlib (visualización)
+import mahotas as mh # Mahotas (haralick)
 
 import cv2 # OpenCV
 from skimage import io, color, filters, feature, morphology # scikit-image
