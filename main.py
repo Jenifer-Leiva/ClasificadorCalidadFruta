@@ -21,6 +21,7 @@ from modulo_dataset import cargar_dataset, normalizar
 from modulo_segmentar import division_segmentacion, segmentar_guardar, recortar_fruta
 from modulo_aumentar import augmentar_dataset
 from modulo_dividir import dividir_guardar
+from modulo_caracteristicas_color_textura import prueba_caracteristicas
 
 
 def main():
@@ -28,7 +29,7 @@ def main():
     # PREPARACION DE LOS DATOS
 
     # 1. Cargar dataset completo
-    x, y, class_names = cargar_dataset()
+    #x, y, class_names = cargar_dataset()
 
     # 2. Normalizar
     #x = normalizar(x)
@@ -44,6 +45,8 @@ def main():
     # 5. Dividir y guardar dataset segmentado + augmentado
     #dividir_guardar(x, y, class_names, size=128, output_root="./DatasetFrutasSplit")
 
+    # 6. Extracción de características de color y textura
+    prueba_caracteristicas(base_in="./DatasetFrutasSegmentadas")
 
 
 if __name__ == "__main__":
