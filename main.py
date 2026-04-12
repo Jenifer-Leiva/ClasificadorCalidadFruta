@@ -29,22 +29,20 @@ def main():
     # PREPARACION DE LOS DATOS
 
     # 1. Cargar dataset completo
-    #x, y, class_names = cargar_dataset()
+    x, y, class_names = cargar_dataset()
 
     # 2. Normalizar
     #x = normalizar(x)
 
     # 3. Segmentar y guardar máscaras
-    #division_segmentacion(base_in="./DatasetFrutas", base_out="./DatasetFrutasSegmentadas", size=128)
+    division_segmentacion(base_in="./DatasetFrutas", base_out="./DatasetFrutasSegmentadas", size=128)
    
     # 4. Data augmentation
     
-    #augmentar_dataset(base_dir="./DatasetFrutasSegmentadas", out_dir="./DatasetFrutasAumentadas", porcentaje=0.4)
-
-
+    augmentar_dataset(base_dir="./DatasetFrutasSegmentadas", out_dir="./DatasetFrutasAumentadas", porcentaje=0.4)
 
     # 5. Dividir y guardar dataset segmentado + augmentado
-    #dividir_guardar(x, y, class_names, size=128, output_root="./DatasetFrutasSplit")
+    dividir_guardar(x, y, class_names, size=128, output_root="./DatasetFrutasSplit")
 
     # 6. Extracción de características de color y textura
     prueba_caracteristicas(base_in="./DatasetFrutasSegmentadas")
