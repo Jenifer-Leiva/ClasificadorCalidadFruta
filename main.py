@@ -38,6 +38,7 @@ def main():
     #division_segmentacion(base_in="./DatasetFrutas", base_out="./DatasetFrutasSegmentadas", size=128)
    
     # 4. Data augmentation
+    
     #augmentar_dataset(base_dir="./DatasetFrutasSegmentadas", out_dir="./DatasetFrutasAumentadas", porcentaje=0.4)
 
 
