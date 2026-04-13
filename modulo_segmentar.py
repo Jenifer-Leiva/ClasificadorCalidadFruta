@@ -123,53 +123,52 @@ def segmentar_guardar(img_flat, img_orig,size=128, output_dir="./DatasetFrutasSe
 #--------------------------------------------------------
 # CARPETA DATASET FRUTAS SEGMENTADAS
 #--------------------------------------------------------
+def division_segmentacion(base_in="./DatasetFrutasDivididas/train", base_out="./DatasetFrutasSegmentadas/train", size=128):
+    ejemplos = []
 
-# --- division_segmentacion ---
-def division_segmentacion(base_in="./DatasetFrutas", base_out="./DatasetFrutasSegmentadas", size=128):
-    ejemplos = []  # lista para guardar un ejemplo por clase
+    # recorrer todas las carpetas de clases dentro de base_in
+    for class_name in os.listdir(base_in):
+        class_path = os.path.join(base_in, class_name)
+        if not os.path.isdir(class_path):
+            continue
 
-    for fruta in ["Banana", "Mango"]:
-        for estado in ["Fresh", "Rotten"]:
-            estado_path = os.path.join(base_in, fruta, estado)
-            if not os.path.isdir(estado_path):
+        files = [f for f in os.listdir(class_path) if f.lower().endswith((".jpg",".jpeg",".png"))]
+
+        ejemplo_mostrado = False
+        for i, f in enumerate(files):
+            img_path = os.path.join(class_path, f)
+            img = cv2.imread(img_path, cv2.IMREAD_COLOR)
+            if img is None:
                 continue
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            img = cv2.resize(img, (size, size))
+            img_flat = img.flatten()
 
-            files = [f for f in os.listdir(estado_path) if f.lower().endswith((".jpg",".jpeg",".png"))]
+            out_dir = os.path.join(base_out, class_name)
+            os.makedirs(out_dir, exist_ok=True)
+            filename = f"{class_name}_{i}_seg.png"
 
-            ejemplo_mostrado = False
-            for i, f in enumerate(files):
-                img_path = os.path.join(estado_path, f)
-                img = cv2.imread(img_path, cv2.IMREAD_COLOR)
-                if img is None:
-                    continue
-                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-                img = cv2.resize(img, (size, size))
-                img_flat = img.flatten()
+            original, overlay, recorte = segmentar_guardar(img_flat, img, size=size, output_dir=out_dir, filename=filename)
 
-                out_dir = os.path.join(base_out, fruta, estado)
-                os.makedirs(out_dir, exist_ok=True)
-                filename = f"{fruta}_{estado}_{i}_seg.png"
+            if not ejemplo_mostrado:
+                ejemplos.append((class_name, original, overlay, recorte))
+                ejemplo_mostrado = True
 
-                original, overlay, recorte = segmentar_guardar(img_flat, img, size=size, output_dir=out_dir, filename=filename)
+    # Mostrar ejemplos si existen
+    if ejemplos:
+        n = len(ejemplos)
+        plt.figure(figsize=(12, 4*n))
+        for idx, (class_name, orig, seg, rec) in enumerate(ejemplos):
+            plt.subplot(n, 3, idx*3+1); plt.imshow(orig); plt.title(f"{class_name} Original"); plt.axis("off")
+            plt.subplot(n, 3, idx*3+2); plt.imshow(seg); plt.title("Segmentada"); plt.axis("off")
+            plt.subplot(n, 3, idx*3+3); plt.imshow(rec); plt.title("Recortada"); plt.axis("off")
 
-                # Guardar un ejemplo por clase
-                if not ejemplo_mostrado:
-                    ejemplos.append((fruta, estado, original, overlay, recorte))
-                    ejemplo_mostrado = True
+        galeria_dir = "./galeria_resultados"
+        os.makedirs(galeria_dir, exist_ok=True)
+        plt.tight_layout()
+        plt.savefig(os.path.join(galeria_dir, "segmentacion_recortes.png"))
+        plt.show()
+    else:
+        print("⚠️ No se encontraron imágenes para segmentar.")
 
-    # Mostrar todos los ejemplos en una sola ventana fija
-    n = len(ejemplos)
-    plt.figure(figsize=(12, 4*n))
-    for idx, (fruta, estado, orig, seg, rec) in enumerate(ejemplos):
-        plt.subplot(n, 3, idx*3+1); plt.imshow(orig); plt.title(f"{fruta}-{estado} Original"); plt.axis("off")
-        plt.subplot(n, 3, idx*3+2); plt.imshow(seg); plt.title("Segmentada"); plt.axis("off")
-        plt.subplot(n, 3, idx*3+3); plt.imshow(rec); plt.title("Recortada"); plt.axis("off")
-    galeria_dir = "./galeria_resultados"
-    os.makedirs(galeria_dir, exist_ok=True)
-
-    plt.tight_layout()
-    plt.savefig(os.path.join(galeria_dir, "segmentacion_recortes.png"))  
-    plt.show()
-
-    print("Segmentación aplicada a todas las imágenes por clase")
-
+    print(f"Segmentación aplicada a {base_in}")
