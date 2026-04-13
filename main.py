@@ -58,7 +58,8 @@ def main():
 
 
     # 6. Extracción de características de color y textura
-    extraer_caracteristicas(base_dir="./DatasetFrutasSegmentadas", out_dir="./galeria_resultados")
+    extraer_caracteristicas(base_dir="./DatasetFrutasAumentadas", out_dir="./galeria_resultados")
+    
 
 if __name__ == "__main__":
     main()
