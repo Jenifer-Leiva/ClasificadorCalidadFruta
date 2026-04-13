@@ -52,10 +52,10 @@ def resize_with_padding(img, size=128):
     return canvas
 
 
-def recortar_fruta(img_rgb, mask, size=128, margin=10):
+def recortar_fruta(img_orig, mask, size=128, margin=10):
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if not contours:
-        return cv2.resize(img_rgb, (size, size))  # fallback
+        return cv2.resize(img_orig, (size, size))  # fallback
 
     largest_contour = max(contours, key=cv2.contourArea)
     x, y, w, h = cv2.boundingRect(largest_contour)
@@ -63,8 +63,8 @@ def recortar_fruta(img_rgb, mask, size=128, margin=10):
     # Expandir con margen
     x = max(0, x - margin)
     y = max(0, y - margin)
-    w = min(img_rgb.shape[1] - x, w + 2*margin)
-    h = min(img_rgb.shape[0] - y, h + 2*margin)
+    w = min(img_orig.shape[1] - x, w + 2*margin)
+    h = min(img_orig.shape[0] - y, h + 2*margin)
 
     # Forzar proporción cuadrada
     side = max(w, h)
@@ -73,7 +73,7 @@ def recortar_fruta(img_rgb, mask, size=128, margin=10):
     w = side
     h = side
 
-    cropped = img_rgb[y:y+h, x:x+w]
+    cropped = img_orig[y:y+h, x:x+w]
     mask_crop = mask[y:y+h, x:x+w]
 
     rgba = cv2.cvtColor(cropped, cv2.COLOR_RGB2RGBA)
@@ -89,7 +89,7 @@ def recortar_fruta(img_rgb, mask, size=128, margin=10):
 # Función principal de segmentación 
 # --- segmentar_guardar ---
 # --- segmentar_guardar ---
-def segmentar_guardar(img_flat, size=128, output_dir="./DatasetFrutasSegmentadas", filename="fruta_segmentada.png"):
+def segmentar_guardar(img_flat, img_orig,size=128, output_dir="./DatasetFrutasSegmentadas", filename="fruta_segmentada.png"):
     img_rgb = limpiar_ruido(img_flat, size=size).astype(np.uint8)
 
     # KMeans clustering
@@ -105,18 +105,18 @@ def segmentar_guardar(img_flat, size=128, output_dir="./DatasetFrutasSegmentadas
     fruit_mask_filled = filtrar_componentes(fruit_mask_filled, min_area=500)
 
     # Overlay solo para visualización
-    mask_color = np.zeros_like(img_rgb)
+    mask_color = np.zeros_like(img_orig)
     mask_color[fruit_mask_filled == 255] = [255, 0, 0]
-    overlay = cv2.addWeighted(img_rgb, 1.0, mask_color, 0.5, 0)
+    overlay = cv2.addWeighted(img_orig, 1.0, mask_color, 0.5, 0)
 
     # Recorte con padding
-    fruta_recortada = recortar_fruta(img_rgb, fruit_mask_filled, size=size)
+    fruta_recortada = recortar_fruta(img_orig, fruit_mask_filled, size=size)
 
     os.makedirs(output_dir, exist_ok=True)
     recorte_path = os.path.join(output_dir, filename.replace("_seg.png", "_crop.png"))
     cv2.imwrite(recorte_path, cv2.cvtColor(fruta_recortada, cv2.COLOR_RGBA2BGRA))
 
-    return img_rgb, overlay, fruta_recortada
+    return img_orig,  overlay, fruta_recortada
 
 
 
@@ -150,7 +150,7 @@ def division_segmentacion(base_in="./DatasetFrutas", base_out="./DatasetFrutasSe
                 os.makedirs(out_dir, exist_ok=True)
                 filename = f"{fruta}_{estado}_{i}_seg.png"
 
-                original, overlay, recorte = segmentar_guardar(img_flat, size=size, output_dir=out_dir, filename=filename)
+                original, overlay, recorte = segmentar_guardar(img_flat, img, size=size, output_dir=out_dir, filename=filename)
 
                 # Guardar un ejemplo por clase
                 if not ejemplo_mostrado:
@@ -164,7 +164,11 @@ def division_segmentacion(base_in="./DatasetFrutas", base_out="./DatasetFrutasSe
         plt.subplot(n, 3, idx*3+1); plt.imshow(orig); plt.title(f"{fruta}-{estado} Original"); plt.axis("off")
         plt.subplot(n, 3, idx*3+2); plt.imshow(seg); plt.title("Segmentada"); plt.axis("off")
         plt.subplot(n, 3, idx*3+3); plt.imshow(rec); plt.title("Recortada"); plt.axis("off")
+    galeria_dir = "./galeria_resultados"
+    os.makedirs(galeria_dir, exist_ok=True)
+
     plt.tight_layout()
+    plt.savefig(os.path.join(galeria_dir, "segmentacion_recortes.png"))  
     plt.show()
 
     print("Segmentación aplicada a todas las imágenes por clase")

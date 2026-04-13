@@ -6,3 +6,5 @@ opencv-python
 scikit-image
 scikit-learn
 pillow
+mahotas
+seaborn
