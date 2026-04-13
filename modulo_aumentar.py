@@ -28,6 +28,25 @@ def añadir_ruido(img, sigma=15):
 import random
 from libs import os, cv2, np
 
+
+def aplicar_en_mascara(img, funcion_aug):
+    if img.shape[2] == 4:  # RGBA
+        rgb = img[:, :, :3]
+        alpha = img[:, :, 3]
+
+        mask = alpha > 0
+
+        rgb_aug = rgb.copy()
+        rgb_mod = funcion_aug(rgb)
+
+        # Aplicar solo donde hay fruta
+        rgb_aug[mask] = rgb_mod[mask]
+
+        return np.dstack((rgb_aug, alpha))
+    else:
+        return funcion_aug(img)
+    
+
 def augmentar_dataset(base_dir="./DatasetFrutasSegmentadas", out_dir="./DatasetFrutasAumentadas", porcentaje=0.4):
     for fruta in os.listdir(base_dir):
         fruta_path = os.path.join(base_dir, fruta)
@@ -67,12 +86,15 @@ def augmentar_dataset(base_dir="./DatasetFrutasSegmentadas", out_dir="./DatasetF
                 metodo = random.choice(["rotar", "voltear", "brillo", "ruido"])
                 if metodo == "rotar":
                     aug_img = rotar(img, angle=random.choice([15, 30, 45, 60]))
+
                 elif metodo == "voltear":
                     aug_img = voltear(img, mode=random.choice(["horizontal", "vertical"]))
+
                 elif metodo == "brillo":
-                    aug_img = cambiar_brillo(img, factor=random.uniform(0.7, 1.5))
-                else:
-                    aug_img = añadir_ruido(img, sigma=random.randint(10, 30))
+                    aug_img = aplicar_en_mascara(img, lambda x: cambiar_brillo(x, factor=random.uniform(0.7, 1.5)))
+
+                else:  # ruido
+                    aug_img = aplicar_en_mascara(img, lambda x: añadir_ruido(x, sigma=random.randint(10, 30)))
 
                 filename = f"{os.path.splitext(f)[0]}_aug{i}.png"
                 out_path = os.path.join(out_estado_path, filename)
