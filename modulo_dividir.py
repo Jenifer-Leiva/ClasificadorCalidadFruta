@@ -1,12 +1,15 @@
 from sklearn.model_selection import train_test_split
 import os, cv2
 import numpy as np
+from modulo_dataset import cargar_dataset
 
-def dividir_guardar(x, y, class_names, size=128, output_root="./DatasetFrutasSplit"):
+def dividir_guardar(base_in="./DatasetFrutas", size=128, output_root="./DatasetFrutasDivididas"):
     """
     Divide el dataset segmentado y aumentado en train/val/test y guarda cada split en carpetas.
     """
-
+ # 1. Cargar dataset directamente desde carpeta
+    x, y, class_names = cargar_dataset(extract_path=base_in, size=size)
+    
     # 1. División estratificada
     x_train, x_temp, y_train, y_temp = train_test_split(
         x, y, test_size=0.30, stratify=y, random_state=42
