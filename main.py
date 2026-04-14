@@ -18,6 +18,7 @@
 
 from libs import np
 from libs import os
+from modulo_caracteristicas_forma import extraer_caracteristicas_forma
 from modulo_dataset import cargar_dataset, normalizar
 from modulo_segmentar import division_segmentacion, segmentar_guardar, recortar_fruta
 from modulo_aumentar import augmentar_dataset
@@ -27,37 +28,35 @@ from modulo_caracteristicas_color_textura import extraer_caracteristicas
 
 
 def main():
-
+    """ 
     # PREPARACION DE LOS DATOS
 
     # 1. Cargar dataset completo
-    #x, y, class_names = cargar_dataset()
+    x, y, class_names = cargar_dataset()
 
     # 2. Normalizar
-    #x = normalizar(x)
+    x = normalizar(x)
 
-    #dividir
-    #dividir_guardar(base_in="./DatasetFrutas", size=128, output_root="./DatasetFrutasDivididas")
-
-
+    # 3. Dividir
+    dividir_guardar(base_in="./DatasetFrutas", size=128, output_root="./DatasetFrutasDivididas")
 
     # Rutas base
-    #base_dividida = "./DatasetFrutasDivididas"
+    base_dividida = "./DatasetFrutasDivididas"
     subsets = ["train", "val"]  # solo aplicar a estas
 
     # 3. Segmentar y guardar máscaras
-    #for subset in subsets:
-    #    base_in = os.path.join(base_dividida, subset)
-    #    base_out = os.path.join("./DatasetFrutasSegmentadas", subset)
-    #    division_segmentacion(base_in=base_in, base_out=base_out, size=128)
+    for subset in subsets:
+        base_in = os.path.join(base_dividida, subset)
+        base_out = os.path.join("./DatasetFrutasSegmentadas", subset)
+        division_segmentacion(base_in=base_in, base_out=base_out, size=128)
 
     # 4. Data augmentation
-    #for subset in subsets:
-    #    base_dir = os.path.join("./DatasetFrutasSegmentadas", subset)
-    #    out_dir = os.path.join("./DatasetFrutasAumentadas", subset)
-    #    augmentar_dataset(base_dir=base_dir, out_dir=out_dir, porcentaje=0.4)
+    for subset in subsets:
+        base_dir = os.path.join("./DatasetFrutasSegmentadas", subset)
+        out_dir = os.path.join("./DatasetFrutasAumentadas", subset)
+        augmentar_dataset(base_dir=base_dir, out_dir=out_dir, porcentaje=0.4)
 
-
+    
     # 6. Extracción de características de color y textura
     for subset in subsets:
         base_dir = os.path.join("./DatasetFrutasAumentadas", subset)
@@ -65,7 +64,11 @@ def main():
         #prueba_caracteristicas(base_in= base_dir, out_dir= out_dir)
         
         extraer_caracteristicas(base_dir=base_dir, out_dir=out_dir)
-    
+    """
+    # 6. Extracción de características de color y textura
+    extraer_caracteristicas_forma(base_dir="./DatasetFrutasAumentadas", out_dir="./galeria_resultados")
+
+
 
 if __name__ == "__main__":
     main()

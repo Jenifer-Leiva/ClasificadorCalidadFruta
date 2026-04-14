@@ -1,6 +1,13 @@
-import os, cv2, numpy as np
+import os, cv2, numpy as np, pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 def analizar_forma(img_path):
+    """
+    Calcula métricas de forma a partir de la máscara de una fruta en una imagen.
+    Devuelve un diccionario con área, perímetro, circularidad, compacidad y excentricidad.
+    """
+
     img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
     if img is None:
         return None
@@ -9,25 +16,30 @@ def analizar_forma(img_path):
     if img.shape[2] == 4:
         mask = img[:, :, 3] > 0
     else:
-        # convertir a gris y binarizar
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         _, mask = cv2.threshold(gray, 10, 255, cv2.THRESH_BINARY)
 
     mask = mask.astype(np.uint8)
 
-    # Contornos
+    # Buscar contornos
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if not contours:
-        return None
+        return {
+            "archivo": os.path.basename(img_path),
+            "area": None,
+            "perimetro": None,
+            "circularidad": None,
+            "compacidad": None,
+            "excentricidad": None
+        }
 
+    # Tomar el contorno más grande
     cnt = max(contours, key=cv2.contourArea)
     area = cv2.contourArea(cnt)
     perimeter = cv2.arcLength(cnt, True)
 
-    # Circularidad
+    # Métricas geométricas
     circularidad = (4 * np.pi * area) / (perimeter**2) if perimeter > 0 else 0
-
-    # Compacidad (área/perímetro)
     compacidad = area / perimeter if perimeter > 0 else 0
 
     # Excentricidad (ajuste de elipse)
@@ -40,6 +52,7 @@ def analizar_forma(img_path):
         excentricidad = np.sqrt(1 - (b**2 / a**2))
 
     return {
+        "archivo": os.path.basename(img_path),
         "area": area,
         "perimetro": perimeter,
         "circularidad": circularidad,
@@ -47,8 +60,48 @@ def analizar_forma(img_path):
         "excentricidad": excentricidad
     }
 
-# 
-base_dir = "./DatasetFrutasAumentadas/train/banana_fresh"
-for f in os.listdir(base_dir):
-    if f.endswith(".png"):
-        metrics = analizar_forma
+def extraer_caracteristicas_forma(base_dir="./DatasetFrutasAumentadas", out_dir="./galeria_resultados"):
+    out_forma_dir = os.path.join(out_dir, "forma")
+    os.makedirs(out_forma_dir, exist_ok=True)
+
+    resultados = []
+    for subset in ["train", "val"]:
+        subset_path = os.path.join(base_dir, subset)
+        if not os.path.isdir(subset_path):
+            continue
+
+        for class_name in os.listdir(subset_path):
+            class_path = os.path.join(subset_path, class_name)
+            if not os.path.isdir(class_path):
+                continue
+
+            for f in os.listdir(class_path):
+                if f.endswith(".png"):
+                    img_path = os.path.join(class_path, f)
+                    metrics = analizar_forma(img_path)
+                    if metrics:
+                        metrics["subset"] = subset
+                        metrics["clase"] = class_name
+                        resultados.append(metrics)
+
+    # Convertir a DataFrame
+    df = pd.DataFrame(resultados)
+
+    # Lista de características a graficar
+    features = ["area", "perimetro", "circularidad", "compacidad", "excentricidad"]
+
+    for feat in features:
+        plt.figure(figsize=(8,6))
+        sns.boxplot(x="clase", y=feat, data=df, hue="subset")
+        sns.stripplot(x="clase", y=feat, data=df, hue="subset", 
+                      dodge=True, alpha=0.3, color="black")  # puntos individuales
+        plt.title(f"Distribución de {feat} por clase")
+        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+        plt.tight_layout()
+
+        # Guardar gráfico
+        out_file = os.path.join(out_forma_dir, f"{feat}_boxplot.png")
+        plt.savefig(out_file)
+        plt.close()
+
+    print(f"✅ Boxplots de características de forma guardados en {out_forma_dir}")
