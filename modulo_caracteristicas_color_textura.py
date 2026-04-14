@@ -93,14 +93,14 @@ def caracteristicas_color_hsv(img, mask, alpha, fruta_estado="Fruta_Estado"):
     # plt.title("Clusters de color (K-Means)")
     # plt.axis('off')
 
-    #plt.tight_layout()
-    #plt.savefig(os.path.join("./galeria_resultados", f"segmentacion_{fruta_estado}.png"))  
+    # plt.tight_layout()
+    # plt.savefig(os.path.join("./galeria_resultados/Diagramas_pruebas", f"segmentacion_{fruta_estado}.png"))  
 
-    #plt.show()
+    # plt.show()
 
-    #print(np.unique(segmented_values_H))
-    #print("Tonos dominantes (Hue):", dominant_hues)
-    #print("Tonos dominantes (HSV):", centers[two_main_clusters])
+    # #print(np.unique(segmented_values_H))
+    # print("Tonos dominantes (Hue):", dominant_hues)
+    # print("Tonos dominantes (HSV):", centers[two_main_clusters])
 
     return dominant_hues[0], dominant_hues[1], Saturations[0], Saturations[1], Values[0], Values[1]#, hist_h_norm_flat
 
@@ -199,12 +199,18 @@ def caracteristicas_textura_GLCM(img, mask):
 
     contrast = graycoprops(glcm, 'contrast')
     entropy = graycoprops(glcm, 'entropy')
+    energy = graycoprops(glcm, 'energy')
+    homogeneity = graycoprops(glcm, 'homogeneity')
+    correlation = graycoprops(glcm, 'correlation')
 
     # Media de los 4 ángulos
     mean_contrast = np.mean(contrast)
     mean_entropy = np.mean(entropy)
+    mean_energy = np.mean(energy)
+    mean_homogeneity = np.mean(homogeneity)
+    mean_correlation = np.mean(correlation)
 
-    return mean_contrast, mean_entropy
+    return mean_contrast, mean_entropy, mean_energy, mean_homogeneity, mean_correlation
 
 #-------------------------------------------------------
     #Características de textura Haralick
@@ -215,7 +221,7 @@ def caracteristicas_textura_Haralick(img, mask):
     #Pasar a blanco y negro
     gray_image = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     gray_image[~mask] = 0
-    # labels = ["dominant_hue_1", "dominant_hue_2", "mean_contrast_GLCM", "mean_entropy_GLCM",
+    # labels = ["dominant_hue_1", "dominant_hue_2", "mean_contrast_GLCM", "mean_entropy_GLCM", "correlation_GLCM", "energy_GLCM", "homogeneity_GLCM",
     # "Angular Second Moment",
     # "Contrast",
     # "Correlation",
@@ -239,22 +245,22 @@ def diagramas(base_in="./DatasetFrutasAumentadas", out_dir="./galeria_resultados
 
     #Visualización de características
 
-    #banano_fresco = features_matrix[(features_matrix["fruit"] == 0) & (features_matrix["state"] == 0)]
-    #banano_podrido = features_matrix[(features_matrix["fruit"] == 0) & (features_matrix["state"] == 1)]
-    #mango_fresco = features_matrix[(features_matrix["fruit"] == 1) & (features_matrix["state"] == 0)]
-    #mango_podrido = features_matrix[(features_matrix["fruit"] == 1) & (features_matrix["state"] == 1)]
+    banano_fresco = features_matrix[(features_matrix["fruit"] == 0) & (features_matrix["state"] == 0)]
+    banano_podrido = features_matrix[(features_matrix["fruit"] == 0) & (features_matrix["state"] == 1)]
+    mango_fresco = features_matrix[(features_matrix["fruit"] == 1) & (features_matrix["state"] == 0)]
+    mango_podrido = features_matrix[(features_matrix["fruit"] == 1) & (features_matrix["state"] == 1)]
 
     # banano_fresco = features_matrix[(features_matrix["fruit_state"] == 0)]
     # banano_podrido = features_matrix[(features_matrix["fruit_state"] == 1)]
     # mango_fresco = features_matrix[(features_matrix["fruit_state"] == 2)]
     # mango_podrido = features_matrix[(features_matrix["fruit_state"] == 3)]
 
-    banano = features_matrix[features_matrix["fruit"] == 0]
-    mango = features_matrix[features_matrix["fruit"] == 1]
-    banano_fresco = banano[banano["state"] == 0]
-    banano_podrido = banano[banano["state"] == 1]
-    mango_fresco = mango[mango["state"] == 0]   
-    mango_podrido = mango[mango["state"] == 1]
+    # banano = features_matrix[features_matrix["fruit"] == 0]
+    # mango = features_matrix[features_matrix["fruit"] == 1]
+    # banano_fresco = banano[banano["state"] == 0]
+    # banano_podrido = banano[banano["state"] == 1]
+    # mango_fresco = mango[mango["state"] == 0]   
+    # mango_podrido = mango[mango["state"] == 1]
     #fresco = features_matrix[features_matrix["state"] == 0]
     #podrido = features_matrix[features_matrix["state"] == 1]
 
@@ -264,43 +270,43 @@ def diagramas(base_in="./DatasetFrutasAumentadas", out_dir="./galeria_resultados
     
         #column_index = features_matrix.columns.get_loc(column)
 
-        d_1 = banano[column]
-        d_2 = mango[column]
+        # d_1 = banano[column]
+        # d_2 = mango[column]
 
-        d_3 = banano_fresco[column]
-        d_4 = banano_podrido[column]
+        # d_3 = banano_fresco[column]
+        # d_4 = banano_podrido[column]
 
-        d_5 = mango_fresco[column]
-        d_6 = mango_podrido[column]
+        # d_5 = mango_fresco[column]
+        # d_6 = mango_podrido[column]
 
-        #d_1 = banano_fresco[column]
-        #d_2 = banano_podrido[column]
-        #d_3 = mango_fresco[column]
-        #d_4 = mango_podrido[column]
+        d_1 = banano_fresco[column]
+        d_2 = banano_podrido[column]
+        d_3 = mango_fresco[column]
+        d_4 = mango_podrido[column]
 
 
-        d12 = [d_1, d_2] # Banano vs Mango
-        d34 = [d_3, d_4] # Banano fresco vs podrido
-        d56 = [d_5, d_6] # Mango fresco vs podrido
+        # d12 = [d_1, d_2] # Banano vs Mango
+        # d34 = [d_3, d_4] # Banano fresco vs podrido
+        # d56 = [d_5, d_6] # Mango fresco vs podrido
 
-        #d = [d_1, d_2, d_3, d_4] # Banano fresco, Banano podrido, Mango fresco, Mango podrido
+        d = [d_1, d_2, d_3, d_4] # Banano fresco, Banano podrido, Mango fresco, Mango podrido
 
         #Tipo de fruta
-        # fig = plt.figure(figsize =(10, 7))
-        # ax = fig.add_axes([0, 0, 1, 1])
+        fig = plt.figure(figsize =(10, 7))
+        ax = fig.add_axes([0, 0, 1, 1])
 
-        # bp = ax.boxplot(d, patch_artist=True)
-        # colors = ['lightyellow', 'lightgreen']
-        # for patch, color in zip(bp['boxes'], colors):
-        #     patch.set_facecolor(color)
+        bp = ax.boxplot(d, patch_artist=True)
+        colors = ['lightyellow', 'lightgreen']
+        for patch, color in zip(bp['boxes'], colors):
+            patch.set_facecolor(color)
 
-        # ax.set_xticklabels(['Banano_fresco', 'Banano_podrido', 'Mango_fresco', 'Mango_podrido'])
-        # plt.title(f'Box Plot de {column} por tipo y estado de fruta')
-        # plt.ylabel(column)
-        # plt.grid(True, linestyle='--', alpha=0.7)
-        # plt.tight_layout()
-        # plt.savefig(os.path.join(out_dir, f"BoxPlot_{column}_TipoEstadoFruta.png"), bbox_inches='tight')
-        # #plt.show()
+        ax.set_xticklabels(['Banano_fresco', 'Banano_podrido', 'Mango_fresco', 'Mango_podrido'])
+        plt.title(f'Box Plot de {column} por tipo y estado de fruta')
+        plt.ylabel(column)
+        plt.grid(True, linestyle='--', alpha=0.7)
+        plt.tight_layout()
+        plt.savefig(os.path.join(out_dir, f"BoxPlot_{column}_TipoEstadoFruta.png"), bbox_inches='tight')
+        #plt.show()
 
         # plt.figure(figsize=(10, 7))
         # sns.violinplot(data=d)
@@ -312,125 +318,138 @@ def diagramas(base_in="./DatasetFrutasAumentadas", out_dir="./galeria_resultados
         # plt.savefig(os.path.join(out_dir, f"ViolinPlot_{column}_TipoEstadoFruta.png"))
         # #plt.show()
 
-        #Tipo de fruta
+        # #Tipo de fruta
         
-        fig = plt.figure(figsize =(10, 7))
-        ax = fig.add_axes([0, 0, 1, 1])
+        # fig = plt.figure(figsize =(10, 7))
+        # ax = fig.add_axes([0, 0, 1, 1])
 
-        bp = ax.boxplot(d12, patch_artist=True)
-        colors = ['lightyellow', 'lightgreen']
-        for patch, color in zip(bp['boxes'], colors):
-            patch.set_facecolor(color)
+        # bp = ax.boxplot(d12, patch_artist=True)
+        # colors = ['lightyellow', 'lightgreen']
+        # for patch, color in zip(bp['boxes'], colors):
+        #     patch.set_facecolor(color)
 
-        ax.set_xticklabels(['Banano', 'Mango'])
-        plt.title(f'Box Plot de {column} por tipo de fruta')
-        plt.ylabel(column)
-        plt.grid(True, linestyle='--', alpha=0.7)
-        plt.tight_layout()
-        plt.savefig(os.path.join(out_dir, f"BoxPlot_{column}_TipoFruta.png"), bbox_inches='tight')
-        #plt.show()
-
-        # plt.figure(figsize=(10, 7))
-        # sns.violinplot(data=d12)
-        # plt.title(f'Violin Plot de {column} por tipo y estado de fruta')
+        # ax.set_xticklabels(['Banano', 'Mango'])
+        # plt.title(f'Box Plot de {column} por tipo de fruta')
         # plt.ylabel(column)
-        # plt.xticks(ticks=[0, 1], labels=['Banano', 'Mango'])
-        # plt.grid(axis='y', linestyle='--', alpha=0.7)
+        # plt.grid(True, linestyle='--', alpha=0.7)
         # plt.tight_layout()
-        # plt.savefig(os.path.join(out_dir, f"ViolinPlot_{column}_TipoEstadoFruta.png"))
+        # plt.savefig(os.path.join(out_dir, f"BoxPlot_{column}_TipoFruta.png"), bbox_inches='tight')
         # #plt.show()
 
-        # #Estado de la fruta: Banano fresco vs podrido
-        fig = plt.figure(figsize =(10, 7))
-        ax = fig.add_axes([0, 0, 1, 1])
+        # # plt.figure(figsize=(10, 7))
+        # # sns.violinplot(data=d12)
+        # # plt.title(f'Violin Plot de {column} por tipo y estado de fruta')
+        # # plt.ylabel(column)
+        # # plt.xticks(ticks=[0, 1], labels=['Banano', 'Mango'])
+        # # plt.grid(axis='y', linestyle='--', alpha=0.7)
+        # # plt.tight_layout()
+        # # plt.savefig(os.path.join(out_dir, f"ViolinPlot_{column}_TipoEstadoFruta.png"))
+        # # #plt.show()
 
-        bp = ax.boxplot(d34, patch_artist=True)
-        colors = ['lightyellow', 'lightgreen']
-        for patch, color in zip(bp['boxes'], colors):
-            patch.set_facecolor(color)
+        # # #Estado de la fruta: Banano fresco vs podrido
+        # fig = plt.figure(figsize =(10, 7))
+        # ax = fig.add_axes([0, 0, 1, 1])
 
-        ax.set_xticklabels(['Fresco', 'Podrido'])
-        plt.title(f'Box Plot de {column} por Estado de la fruta (Banano)')
-        plt.ylabel(column)
-        plt.grid(True, linestyle='--', alpha=0.7)
-        plt.tight_layout()
-        plt.savefig(os.path.join(out_dir, f"BoxPlot_{column}_EstadoFruta_Banano.png"),  bbox_inches='tight')
-        #plt.show()
+        # bp = ax.boxplot(d34, patch_artist=True)
+        # colors = ['lightyellow', 'lightgreen']
+        # for patch, color in zip(bp['boxes'], colors):
+        #     patch.set_facecolor(color)
 
-        # plt.figure(figsize=(10, 7))
-        # sns.violinplot(data=d34, palette=colors)
-        # plt.title(f'Violin Plot de {column} por Estado de la fruta (Banano)')
+        # ax.set_xticklabels(['Fresco', 'Podrido'])
+        # plt.title(f'Box Plot de {column} por Estado de la fruta (Banano)')
         # plt.ylabel(column)
-        # plt.xticks(ticks=[0, 1], labels=['Fresco', 'Podrido'])
-        # plt.grid(axis='y', linestyle='--', alpha=0.7)
+        # plt.grid(True, linestyle='--', alpha=0.7)
         # plt.tight_layout()
-        # plt.savefig(os.path.join(out_dir, f"ViolinPlot_{column}_EstadoFruta_Banano.png"), bbox_inches='tight')
+        # plt.savefig(os.path.join(out_dir, f"BoxPlot_{column}_EstadoFruta_Banano.png"),  bbox_inches='tight')
         # #plt.show()
 
-        # #Estado de la fruta: Mango fresco vs podrido
-        fig = plt.figure(figsize =(10, 7))
-        ax = fig.add_axes([0, 0, 1, 1])
+        # # plt.figure(figsize=(10, 7))
+        # # sns.violinplot(data=d34, palette=colors)
+        # # plt.title(f'Violin Plot de {column} por Estado de la fruta (Banano)')
+        # # plt.ylabel(column)
+        # # plt.xticks(ticks=[0, 1], labels=['Fresco', 'Podrido'])
+        # # plt.grid(axis='y', linestyle='--', alpha=0.7)
+        # # plt.tight_layout()
+        # # plt.savefig(os.path.join(out_dir, f"ViolinPlot_{column}_EstadoFruta_Banano.png"), bbox_inches='tight')
+        # # #plt.show()
 
-        bp = ax.boxplot(d56, patch_artist=True)
-        #colors = ['lightgreen', 'lightcoral']
-        for patch, color in zip(bp['boxes'], colors):
-            patch.set_facecolor(color)
+        # # #Estado de la fruta: Mango fresco vs podrido
+        # fig = plt.figure(figsize =(10, 7))
+        # ax = fig.add_axes([0, 0, 1, 1])
 
-        ax.set_xticklabels(['Fresco', 'Podrido'])
-        plt.title(f'Box Plot de {column} por Estado de la fruta (Mango)')
-        plt.ylabel(column)
-        plt.grid(True, linestyle='--', alpha=0.7)
-        plt.tight_layout()
-        plt.savefig(os.path.join(out_dir, f"BoxPlot_{column}_EstadoFruta_Mango.png"),  bbox_inches='tight')
+        # bp = ax.boxplot(d56, patch_artist=True)
+        # #colors = ['lightgreen', 'lightcoral']
+        # for patch, color in zip(bp['boxes'], colors):
+        #     patch.set_facecolor(color)
+
+        # ax.set_xticklabels(['Fresco', 'Podrido'])
+        # plt.title(f'Box Plot de {column} por Estado de la fruta (Mango)')
+        # plt.ylabel(column)
+        # plt.grid(True, linestyle='--', alpha=0.7)
+        # plt.tight_layout()
+        # plt.savefig(os.path.join(out_dir, f"BoxPlot_{column}_EstadoFruta_Mango.png"),  bbox_inches='tight')
+        # # #plt.show()
+
+        # # plt.figure(figsize=(10, 7))
+        # # sns.violinplot(data=d56, palette=colors)
+        # # plt.title(f'Violin Plot de {column} por Estado de la fruta (Mango)')
+        # # plt.ylabel(column)
+        # # plt.xticks(ticks=[0, 1], labels=['Fresco', 'Podrido'])
+        # # plt.grid(axis='y', linestyle='--', alpha=0.7)
+        # # plt.tight_layout()
+        # # plt.savefig(os.path.join(out_dir, f"ViolinPlot_{column}_EstadoFruta_Mango.png"), bbox_inches='tight')
         # #plt.show()
 
-        # plt.figure(figsize=(10, 7))
-        # sns.violinplot(data=d56, palette=colors)
-        # plt.title(f'Violin Plot de {column} por Estado de la fruta (Mango)')
-        # plt.ylabel(column)
-        # plt.xticks(ticks=[0, 1], labels=['Fresco', 'Podrido'])
-        # plt.grid(axis='y', linestyle='--', alpha=0.7)
-        # plt.tight_layout()
-        # plt.savefig(os.path.join(out_dir, f"ViolinPlot_{column}_EstadoFruta_Mango.png"), bbox_inches='tight')
-        #plt.show()
 
-
-def prueba_caracteristicas(base_in="./DatasetFrutasAumentadas", out_dir="./galeria_resultados"):
+def prueba_caracteristicas(base_in, out_dir):
 
     feature_vectors = [] 
     labels = []
 
-    for fruta in ["Banana", "Mango"]:
-        for estado in ["Fresh", "Rotten"]:
-            estado_path = os.path.join(base_in, fruta, estado)
-            if not os.path.isdir(estado_path):
-                continue
+    # recorrer todas las carpetas de clases dentro de base_in
+    for class_name in os.listdir(base_in):
+        print(f"Procesando clase: {class_name}")
+        class_path = os.path.join(base_in, class_name)
+        if not os.path.isdir(class_path):
+            continue
 
-            files = [f for f in os.listdir(estado_path) if f.lower().endswith((".jpg",".jpeg",".png"))]
+    # for fruta in ["Banana", "Mango"]:
+    #     for estado in ["Fresh", "Rotten"]:
+    #         estado_path = os.path.join(base_in, fruta, estado)
+    #         if not os.path.isdir(estado_path):
+    #             continue
 
-            random_img = random.choice(files)
+        files = [f for f in os.listdir(class_path) if f.lower().endswith((".jpg",".jpeg",".png"))]
 
-            src = os.path.join(estado_path, random_img)
-            img = cv2.imread(src, cv2.IMREAD_UNCHANGED)
-            if img is not None:
-                rgb, mask, alpha = aplicar_en_mascara(img)
-                features_vector_img = []
-                features_vector_img.append(fruta)
-                features_vector_img.append(estado)
-                features_vector_img.append(f"{fruta}_{estado}")
-                features_vector_img.extend(caracteristicas_color_hsv(rgb, mask, alpha, fruta_estado=f"{fruta}_{estado}"))
-                features_vector_img.extend(caracteristicas_textura_GLCM(rgb, mask))
-                features_vector_img.extend(caracteristicas_textura_Haralick(rgb, mask))
+        random_img = random.choice(files)
+
+        src = os.path.join(class_path, random_img)
+        img = cv2.imread(src, cv2.IMREAD_UNCHANGED)
+        if img is not None:
+            rgb, mask, alpha = aplicar_en_mascara(img)
+            features_vector_img = []
+            class_parts = class_name.split("_")
+            fruta = class_parts[0]
+            estado = class_parts[1]
+            features_vector_img.append(fruta)
+            features_vector_img.append(estado)
+            features_vector_img.append(f"{fruta}_{estado}")
+            features_vector_img.extend(caracteristicas_color_hsv(rgb, mask, alpha, fruta_estado=f"{fruta}_{estado}"))
+            features_vector_img.extend(caracteristicas_textura_GLCM(rgb, mask))
+            features_vector_img.extend(caracteristicas_textura_Haralick(rgb, mask))
 
 
-                #feature_vector_img = np.concatenate([[fruta],[estado], features_vector_img])
-                feature_vectors.append(features_vector_img)
-                #labels.append(f"{fruta}_{estado}")
-                print(src)
+            #feature_vector_img = np.concatenate([[fruta],[estado], features_vector_img])
+            feature_vectors.append(features_vector_img)
+            #labels.append(f"{fruta}_{estado}")
+            print(src)
 
     #labels = np.array(labels)
     #features_matrix = np.array(feature_vectors)
-    features_matrix = pd.DataFrame(feature_vectors, columns=["fruit","state","fruit_state", "dominant_hue_1", "dominant_hue_2", 
+ 
+   #features_matrix = np.array(feature_vectors)
+    features_matrix = pd.DataFrame(feature_vectors, columns=["fruit","state", "fruit_state","dominant_hue_1", "dominant_hue_2",
+                                                             "Saturation_1", "Saturation_2", "Value_1", "Value_2",
                                                                 "mean_contrast_GLCM", "mean_entropy_GLCM",
                                                                 "Angular Second Moment","Contrast",
                                                                 "Correlation",
@@ -451,24 +470,32 @@ def prueba_caracteristicas(base_in="./DatasetFrutasAumentadas", out_dir="./galer
     features_matrix["state"] = le.fit_transform(features_matrix["state"])
     features_matrix["fruit_state"] = le.fit_transform(features_matrix["fruit_state"])
 
-    print(features_matrix.head())
-    features_matrix.to_csv(os.path.join(out_dir, "MatrizCaracteristicas.csv"), index=False)
-    
-    diagramas(base_in, "./galeria_resultados/Diagramas_pruebas", features_matrix)
-    feature_selection(out_dir, features_matrix)
+    #Normalizar características 
+    minmax_scaler = MinMaxScaler()
+    numeric_cols = features_matrix.columns.difference(
+    ["fruit", "state", "fruit_state"], sort=False) # Excluir columnas de etiquetas
+    features_matrix_norm = features_matrix.copy()
+    features_matrix_norm[numeric_cols] = minmax_scaler.fit_transform(
+    features_matrix[numeric_cols])
 
-    print("Extracción de características de color y textura de prueba completada") 
-    print("Matriz de características:")
+    print(features_matrix_norm.head())
+    features_matrix_norm.to_csv(os.path.join(out_dir, "MatrizCaracteristicasNormalizada.csv"), index=False)
+    diagramas(base_in, out_dir, features_matrix_norm)
+
+    feature_selection(out_dir, features_matrix_norm)
+
+    print("Extracción de características de color y texture completada") 
+
 
     #print(features_matrix)
     #print(labels)
 
-def feature_selection(out_dir="./galeria_resultados", features_matrix=None):
+def feature_selection(out_dir, features_matrix=None):
     #X = features
     #Y = Labels
 
     X = features_matrix.drop(columns=["fruit", "state", "fruit_state","dominant_hue_1", "dominant_hue_2", "Saturation_1", "Saturation_2", "Value_1", "Value_2", "mean_contrast_GLCM", "mean_entropy_GLCM"])
-    Y = features_matrix["fruit"]
+    Y = features_matrix["fruit_state"]  # Usar la columna combinada de fruta y estado como etiqueta
 
     selector = SelectKBest(score_func=f_classif, k=5) #Número de características a seleccionar
 
@@ -487,41 +514,58 @@ def feature_selection(out_dir="./galeria_resultados", features_matrix=None):
     #print("Características seleccionadas ReliefF:", selected_features_relief)
 
 
-def extraer_caracteristicas(base_dir="./DatasetFrutasAumentadas", out_dir="./galeria_resultados"):
+def extraer_caracteristicas(base_dir, out_dir):
     feature_vectors = []
 
-    for fruta in os.listdir(base_dir):
-        fruta_path = os.path.join(base_dir, fruta)
-        if not os.path.isdir(fruta_path):
+    # recorrer todas las carpetas de clases dentro de base_in
+    for class_name in os.listdir(base_dir):
+        print(f"Procesando clase: {class_name}")
+        class_path = os.path.join(base_dir, class_name)
+        if not os.path.isdir(class_path):
             continue
 
-        for estado in os.listdir(fruta_path):
-            estado_path = os.path.join(fruta_path, estado)
-            if not os.path.isdir(estado_path):
-                continue
+    # for fruta in ["Banana", "Mango"]:
+    #     for estado in ["Fresh", "Rotten"]:
+    #         estado_path = os.path.join(base_in, fruta, estado)
+    #         if not os.path.isdir(estado_path):
+    #             continue
 
-            files = [f for f in os.listdir(estado_path) if f.lower().endswith(".png")]
+    # for fruta in os.listdir(base_dir):
+    #     fruta_path = os.path.join(base_dir, fruta)
+    #     if not os.path.isdir(fruta_path):
+    #         continue
 
-            for f in files:
-                src = os.path.join(estado_path, f)
-                img = cv2.imread(src, cv2.IMREAD_UNCHANGED)
-                if img is not None:
-                    rgb, mask, alpha = aplicar_en_mascara(img)
-                    features_vector_img = []
-                    features_vector_img.append(fruta)
-                    features_vector_img.append(estado)
-                    features_vector_img.append(f"{fruta}_{estado}")
-                    features_vector_img.extend(caracteristicas_color_hsv(rgb, mask, alpha, fruta_estado=f"{fruta}_{estado}"))
-                    features_vector_img.extend(caracteristicas_textura_GLCM(rgb, mask))
-                    features_vector_img.extend(caracteristicas_textura_Haralick(rgb, mask))
+    #     for estado in os.listdir(fruta_path):
+    #         estado_path = os.path.join(fruta_path, estado)
+    #         if not os.path.isdir(estado_path):
+    #             continue
 
-                    #feature_vector_img = np.concatenate([[fruta],[estado], features_vector_img])
-                    feature_vectors.append(features_vector_img)
+        files = [f for f in os.listdir(class_path) if f.lower().endswith((".jpg",".jpeg",".png"))]
+
+        for f in files:
+            src = os.path.join(class_path, f)
+            img = cv2.imread(src, cv2.IMREAD_UNCHANGED)
+            if img is not None:
+                rgb, mask, alpha = aplicar_en_mascara(img)
+                class_parts = class_name.split("_")
+                fruta = class_parts[0]
+                estado = class_parts[1]
+                features_vector_img = []
+                features_vector_img.append(fruta)
+                features_vector_img.append(estado)
+                features_vector_img.append(f"{fruta}_{estado}")
+                features_vector_img.extend(caracteristicas_color_hsv(rgb, mask, alpha, fruta_estado=f"{fruta}_{estado}"))
+                features_vector_img.extend(caracteristicas_textura_GLCM(rgb, mask))
+                features_vector_img.extend(caracteristicas_textura_Haralick(rgb, mask))
+
+                #feature_vector_img = np.concatenate([[fruta],[estado], features_vector_img])
+                feature_vectors.append(features_vector_img)
 
     #features_matrix = np.array(feature_vectors)
     features_matrix = pd.DataFrame(feature_vectors, columns=["fruit","state", "fruit_state","dominant_hue_1", "dominant_hue_2",
                                                              "Saturation_1", "Saturation_2", "Value_1", "Value_2",
                                                                 "mean_contrast_GLCM", "mean_entropy_GLCM",
+                                                                "mean_energy_GLCM", "mean_homogeneity_GLCM", "mean_correlation_GLCM",
                                                                 "Angular Second Moment","Contrast",
                                                                 "Correlation",
                                                                 "Sum of Squares (Variance)",
@@ -555,5 +599,5 @@ def extraer_caracteristicas(base_dir="./DatasetFrutasAumentadas", out_dir="./gal
 
     feature_selection(out_dir, features_matrix_norm)
 
-    print("Extracción de características de color y texture completada") 
+    print("Extracción de características de color y textura completada") 
 

@@ -22,6 +22,7 @@ from modulo_dataset import cargar_dataset, normalizar
 from modulo_segmentar import division_segmentacion, segmentar_guardar, recortar_fruta
 from modulo_aumentar import augmentar_dataset
 from modulo_dividir import dividir_guardar
+from modulo_caracteristicas_color_textura import prueba_caracteristicas
 from modulo_caracteristicas_color_textura import extraer_caracteristicas
 
 
@@ -41,7 +42,7 @@ def main():
 
 
     # Rutas base
-    base_dividida = "./DatasetFrutasDivididas"
+    #base_dividida = "./DatasetFrutasDivididas"
     subsets = ["train", "val"]  # solo aplicar a estas
 
     # 3. Segmentar y guardar máscaras
@@ -58,7 +59,12 @@ def main():
 
 
     # 6. Extracción de características de color y textura
-    extraer_caracteristicas(base_dir="./DatasetFrutasAumentadas", out_dir="./galeria_resultados")
+    for subset in subsets:
+        base_dir = os.path.join("./DatasetFrutasAumentadas", subset)
+        out_dir = os.path.join("./galeria_resultados", subset)
+        #prueba_caracteristicas(base_in= base_dir, out_dir= out_dir)
+        
+        extraer_caracteristicas(base_dir=base_dir, out_dir=out_dir)
     
 
 if __name__ == "__main__":
