@@ -1,57 +1,154 @@
 from sklearn.model_selection import train_test_split
-import os, cv2
+from sklearn.preprocessing import LabelEncoder
+import os, cv2, json
 import numpy as np
 from modulo_dataset import cargar_dataset
 
-def dividir_guardar(base_in="./DatasetFrutas", size=128, output_root="./DatasetFrutasDivididas"):
+
+def dividir_guardar_multioutput(base_in="./DatasetFrutas", size=128, output_root="./DatasetFrutasDivididas"):
     """
-    Divide el dataset segmentado y aumentado en train/val/test y guarda cada split en carpetas.
+    Divide el dataset en train/val/test para multi-output:
+    - tipo de fruta
+    - estado de fruta
     """
- # 1. Cargar dataset directamente desde carpeta
+
+    # --------------------------------------------------
+    # 1. CARGAR DATASET
+    # --------------------------------------------------
     x, y, class_names = cargar_dataset(extract_path=base_in, size=size)
-    
-    # 1. División estratificada
-    x_train, x_temp, y_train, y_temp = train_test_split(
-        x, y, test_size=0.30, stratify=y, random_state=42
+
+    # --------------------------------------------------
+    # 2. SEPARAR ETIQUETAS
+    # --------------------------------------------------
+    tipo_labels = []
+    estado_labels = []
+
+    for label in y:
+        fruta, estado = class_names[label]
+        tipo_labels.append(fruta)
+        estado_labels.append(estado)
+
+    tipo_labels = np.array(tipo_labels)
+    estado_labels = np.array(estado_labels)
+
+    # --------------------------------------------------
+    # 3. CODIFICAR ETIQUETAS
+    # --------------------------------------------------
+    le_tipo = LabelEncoder()
+    le_estado = LabelEncoder()
+
+    y_tipo = le_tipo.fit_transform(tipo_labels)
+    y_estado = le_estado.fit_transform(estado_labels)
+
+    # --------------------------------------------------
+    # 4. ESTRATIFICACIÓN COMBINADA
+    # --------------------------------------------------
+    y_strat = np.array([f"{t}_{e}" for t, e in zip(y_tipo, y_estado)])
+
+    # --------------------------------------------------
+    # 5. DIVISIÓN TRAIN / VAL / TEST
+    # --------------------------------------------------
+    x_train, x_temp, y_tipo_train, y_tipo_temp, y_estado_train, y_estado_temp = train_test_split(
+        x, y_tipo, y_estado,
+        test_size=0.30,
+        stratify=y_strat,
+        random_state=42
     )
-    x_val, x_test, y_val, y_test = train_test_split(
-        x_temp, y_temp, test_size=0.50, stratify=y_temp, random_state=42
+
+    # segunda estratificación
+    y_strat_temp = np.array([f"{t}_{e}" for t, e in zip(y_tipo_temp, y_estado_temp)])
+
+    x_val, x_test, y_tipo_val, y_tipo_test, y_estado_val, y_estado_test = train_test_split(
+        x_temp, y_tipo_temp, y_estado_temp,
+        test_size=0.50,
+        stratify=y_strat_temp,
+        random_state=42
     )
 
-    print("DIVISION DE DATOS")
-    print("Train:", x_train.shape, y_train.shape)
-    print("Validation:", x_val.shape, y_val.shape)
-    print("Test:", x_test.shape, y_test.shape)
+    print("DIVISIÓN DE DATOS")
+    print("Train:", x_train.shape)
+    print("Val:", x_val.shape)
+    print("Test:", x_test.shape)
 
-    # 2. Nombres de clases (ejemplo: ("Banana","Fresh"))
-    classes = [f"{fruta}_{estado}" for fruta, estado in class_names]
+    # --------------------------------------------------
+    # 6. FUNCIÓN PARA GUARDAR
+    # --------------------------------------------------
+    def dividir_guardar(x_split, y_tipo_split, y_estado_split, split_name):
+        labels_info = []
 
-    # 3. Helper para guardar cada split
-    def guardar_split(x_split, y_split, split_name):
-        for i, (img_flat, label) in enumerate(zip(x_split, y_split)):
-            class_name = classes[label]
+        img_dir = os.path.join(output_root, split_name, "images")
+        os.makedirs(img_dir, exist_ok=True)
 
-            # reconstruir imagen desde array
+        for i, (img_flat, tipo, estado) in enumerate(zip(x_split, y_tipo_split, y_estado_split)):
             img = img_flat.reshape(size, size, 3)
 
-            # si está normalizada (0-1), volver a 0-255
+            # convertir a uint8
             if img.max() <= 1.0:
                 img_uint8 = (img * 255).astype(np.uint8)
             else:
                 img_uint8 = img.astype(np.uint8)
 
-            # ruta destino
-            path = os.path.join(output_root, split_name, class_name)
-            os.makedirs(path, exist_ok=True)
+            filename = f"img_{i}.jpg"
+            cv2.imwrite(os.path.join(img_dir, filename), img_uint8)
 
-            # guardar archivo
-            cv2.imwrite(os.path.join(path, f"img_{i}.jpg"), img_uint8)
+            labels_info.append({
+                "file": filename,
+                "tipo": le_tipo.inverse_transform([tipo])[0],
+                "estado": le_estado.inverse_transform([estado])[0]
+            })
 
-        print(f"{split_name} guardado en {output_root}/{split_name}")
+        # guardar etiquetas
+        with open(os.path.join(output_root, split_name, "labels.json"), "w") as f:
+            json.dump(labels_info, f, indent=4)
 
-    # 4. Guardar cada conjunto
-    guardar_split(x_train, y_train, "train")
-    guardar_split(x_val, y_val, "val")
-    guardar_split(x_test, y_test, "test")
+        print(f"{split_name} guardado correctamente")
 
-    return (x_train, y_train, x_val, y_val, x_test, y_test, class_names)
+    # --------------------------------------------------
+    # 7. GUARDAR SPLITS
+    # --------------------------------------------------
+    dividir_guardar(x_train, y_tipo_train, y_estado_train, "train")
+    dividir_guardar(x_val, y_tipo_val, y_estado_val, "val")
+    dividir_guardar(x_test, y_tipo_test, y_estado_test, "test")
+
+    return (
+        x_train, y_tipo_train, y_estado_train,
+        x_val, y_tipo_val, y_estado_val,
+        x_test, y_tipo_test, y_estado_test,
+        le_tipo, le_estado
+    )
+
+
+from collections import Counter
+
+def mostrar_distribucion(y_tipo, y_estado, le_tipo, le_estado, nombre):
+    print(f"\n📊 Distribución en {nombre}")
+
+    # Decodificar etiquetas
+    tipo_dec = le_tipo.inverse_transform(y_tipo)
+    estado_dec = le_estado.inverse_transform(y_estado)
+
+    # Conteo por tipo
+    conteo_tipo = Counter(tipo_dec)
+    print("\nTipo de fruta:")
+    for k, v in conteo_tipo.items():
+        print(f"  {k}: {v}")
+
+    # Conteo por estado
+    conteo_estado = Counter(estado_dec)
+    print("\nEstado de fruta:")
+    for k, v in conteo_estado.items():
+        print(f"  {k}: {v}")
+
+    # Conteo combinado
+    combinados = [f"{t}_{e}" for t, e in zip(tipo_dec, estado_dec)]
+    conteo_comb = Counter(combinados)
+
+    print("\nCombinación tipo_estado:")
+    for k, v in conteo_comb.items():
+        print(f"  {k}: {v}")
+
+print("DIVISIÓN DE DATOS")
+
+mostrar_distribucion(y_tipo_train, y_estado_train, le_tipo, le_estado, "TRAIN")
+mostrar_distribucion(y_tipo_val, y_estado_val, le_tipo, le_estado, "VALIDATION")
+mostrar_distribucion(y_tipo_test, y_estado_test, le_tipo, le_estado, "TEST")

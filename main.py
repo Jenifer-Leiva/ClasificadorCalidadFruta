@@ -22,13 +22,13 @@ from modulo_caracteristicas_forma import extraer_caracteristicas_forma
 from modulo_dataset import cargar_dataset, normalizar
 from modulo_segmentar import division_segmentacion, segmentar_guardar, recortar_fruta
 from modulo_aumentar import augmentar_dataset
-from modulo_dividir import dividir_guardar
+from modulo_dividir import dividir_guardar_multioutput
 from modulo_caracteristicas_color_textura import prueba_caracteristicas
 from modulo_caracteristicas_color_textura import extraer_caracteristicas
 
 
 def main():
-    """ 
+    
     # PREPARACION DE LOS DATOS
 
     # 1. Cargar dataset completo
@@ -38,7 +38,7 @@ def main():
     x = normalizar(x)
 
     # 3. Dividir
-    dividir_guardar(base_in="./DatasetFrutas", size=128, output_root="./DatasetFrutasDivididas")
+    dividir_guardar_multioutput(base_in="./DatasetFrutas", size=128, output_root="./DatasetFrutasDivididas")
 
     # Rutas base
     base_dividida = "./DatasetFrutasDivididas"
@@ -49,7 +49,7 @@ def main():
         base_in = os.path.join(base_dividida, subset)
         base_out = os.path.join("./DatasetFrutasSegmentadas", subset)
         division_segmentacion(base_in=base_in, base_out=base_out, size=128)
-
+    """
     # 4. Data augmentation
     for subset in subsets:
         base_dir = os.path.join("./DatasetFrutasSegmentadas", subset)
@@ -64,10 +64,10 @@ def main():
         #prueba_caracteristicas(base_in= base_dir, out_dir= out_dir)
         
         extraer_caracteristicas(base_dir=base_dir, out_dir=out_dir)
-    """
+    
     # 6. Extracción de características de color y textura
     extraer_caracteristicas_forma(base_dir="./DatasetFrutasAumentadas", out_dir="./galeria_resultados")
-
+    """
 
 
 if __name__ == "__main__":

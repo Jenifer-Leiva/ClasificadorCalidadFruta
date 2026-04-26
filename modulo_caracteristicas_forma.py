@@ -1,3 +1,4 @@
+from cv2.gapi import mask
 import os, cv2, numpy as np, pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -51,13 +52,30 @@ def analizar_forma(img_path):
         b = min(axes) / 2.0
         excentricidad = np.sqrt(1 - (b**2 / a**2))
 
+    # Momentos de Hu
+    moments = cv2.moments(mask)
+    hu_moments = cv2.HuMoments(moments).flatten()
+
+    # Escala logarítmica (estándar)
+    hu_moments = [-np.sign(h) * np.log10(abs(h)) if h != 0 else 0 for h in hu_moments]
+
+
     return {
         "archivo": os.path.basename(img_path),
         "area": area,
         "perimetro": perimeter,
         "circularidad": circularidad,
         "compacidad": compacidad,
-        "excentricidad": excentricidad
+        "excentricidad": excentricidad,
+
+        # 🔥 nuevos
+        "hu1": hu_moments[0],
+        "hu2": hu_moments[1],
+        "hu3": hu_moments[2],
+        "hu4": hu_moments[3],
+        "hu5": hu_moments[4],
+        "hu6": hu_moments[5],
+        "hu7": hu_moments[6],
     }
 
 def extraer_caracteristicas_forma(base_dir="./DatasetFrutasAumentadas", out_dir="./galeria_resultados"):
@@ -88,7 +106,10 @@ def extraer_caracteristicas_forma(base_dir="./DatasetFrutasAumentadas", out_dir=
     df = pd.DataFrame(resultados)
 
     # Lista de características a graficar
-    features = ["area", "perimetro", "circularidad", "compacidad", "excentricidad"]
+    features = [
+    "area", "perimetro", "circularidad", "compacidad", "excentricidad",
+    "hu1", "hu2", "hu3", "hu4", "hu5", "hu6", "hu7"
+    ]
 
     for feat in features:
         plt.figure(figsize=(8,6))
@@ -98,6 +119,7 @@ def extraer_caracteristicas_forma(base_dir="./DatasetFrutasAumentadas", out_dir=
         plt.title(f"Distribución de {feat} por clase")
         plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
         plt.tight_layout()
+        plt.ylim(-10, 10)
 
         # Guardar gráfico
         out_file = os.path.join(out_forma_dir, f"{feat}_boxplot.png")
@@ -105,3 +127,5 @@ def extraer_caracteristicas_forma(base_dir="./DatasetFrutasAumentadas", out_dir=
         plt.close()
 
     print(f"✅ Boxplots de características de forma guardados en {out_forma_dir}")
+
+

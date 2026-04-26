@@ -81,6 +81,23 @@ def recortar_fruta(img_orig, mask, size=128, margin=10):
 
     return resize_with_padding(rgba, size=size)
 
+def fill_holes(mask):
+    # Copia de la máscara
+    im_floodfill = mask.copy()
+
+    h, w = mask.shape[:2]
+    mask_flood = np.zeros((h+2, w+2), np.uint8)
+
+    # FloodFill desde la esquina (fondo)
+    cv2.floodFill(im_floodfill, mask_flood, (0, 0), 255)
+
+    # Invertir floodfill
+    im_floodfill_inv = cv2.bitwise_not(im_floodfill)
+
+    # Combinar con la original
+    filled = mask | im_floodfill_inv
+
+    return filled
 
 #--------------------------------------------------------
 # SEGEMENTACION K MEANS
@@ -102,6 +119,7 @@ def segmentar_guardar(img_flat, img_orig,size=128, output_dir="./DatasetFrutasSe
     fruit_mask = (segmented_labels != background_cluster_index).reshape(size, size).astype(np.uint8) * 255
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9,9))
     fruit_mask_filled = cv2.morphologyEx(fruit_mask, cv2.MORPH_CLOSE, kernel)
+    fruit_mask_filled = fill_holes(fruit_mask_filled)
     fruit_mask_filled = filtrar_componentes(fruit_mask_filled, min_area=500)
 
     # Overlay solo para visualización
