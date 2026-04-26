@@ -146,9 +146,9 @@ def mostrar_distribucion(y_tipo, y_estado, le_tipo, le_estado, nombre):
     print("\nCombinación tipo_estado:")
     for k, v in conteo_comb.items():
         print(f"  {k}: {v}")
+    
+    mostrar_distribucion(y_tipo_train, y_estado_train, le_tipo, le_estado, "TRAIN")
+    mostrar_distribucion(y_tipo_val, y_estado_val, le_tipo, le_estado, "VALIDATION")
+    mostrar_distribucion(y_tipo_test, y_estado_test, le_tipo, le_estado, "TEST")
 
 print("DIVISIÓN DE DATOS")
-
-mostrar_distribucion(y_tipo_train, y_estado_train, le_tipo, le_estado, "TRAIN")
-mostrar_distribucion(y_tipo_val, y_estado_val, le_tipo, le_estado, "VALIDATION")
-mostrar_distribucion(y_tipo_test, y_estado_test, le_tipo, le_estado, "TEST")
