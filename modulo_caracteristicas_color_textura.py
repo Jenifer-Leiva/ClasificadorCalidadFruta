@@ -5,7 +5,7 @@ from skimage.feature import graycomatrix, graycoprops
 from sklearn.cluster import KMeans
 from sklearn.feature_extraction import image
 
-from libs import os,cv2, np, plt, mh, sns,pd
+from libs import os,cv2, np, plt, mh, sns,pd, stats
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 import random
 from sklearn.feature_selection import SelectKBest, f_classif 
@@ -424,21 +424,120 @@ def feature_selection(out_dir, features_matrix=None, first_column_name="fruit"):
     #X = features
     #Y = Labels
 
-    X = features_matrix.drop(columns=["dominant_hue_1", "dominant_hue_2", "Saturation_1", "Saturation_2", "Value_1", "Value_2", "mean_contrast_GLCM", "mean_entropy_GLCM"])
+    #X = features_matrix.drop(columns=["dominant_hue_1", "dominant_hue_2", "Saturation_1", "Saturation_2", "Value_1", "Value_2", "mean_contrast_GLCM", "mean_entropy_GLCM"])
+    X = features_matrix.drop(columns = 'first_column_name')
     Y = features_matrix[first_column_name]  # Usar la primera columna como etiqueta
 
-    selector = SelectKBest(score_func=f_classif, k=5) #Número de características a seleccionar
+    #T-test (Two Tailed)
+    #Hay diferencia entre las medias de las dos clases
 
-    X_selected = selector.fit_transform(X, Y)
+    groups_ = features_matrix.groupby(first_column_name)
+    label_0 =  groups_.get_group(1)
+    label_1 = groups_.get_group(2)
 
-    selected_features = X.columns[selector.get_support()]
-    f_scores = selector.scores_[selector.get_support()]
+    p_values = []
+    p_labels = []
+
+    print(groups_.groups)
+
+    features_selected_ttest = []
+    
+    alpha = 0.05
+    #Degrees of freedom
+    df = len(label_0)+len(label_1)-2
+    #Tail
+    crit_t = stats.t.ppf(1 - alpha/2, df)
+
+    for feature in X.columns:
+
+        #Levene test
+        levene_stat, levene_p_value = stats.levene(label_0[feature], label_1[feature])
+        print(levene_p_value)
+
+        if(levene_p_value > alpha) #Se asume que las clases tienen igual varianza
+        {
+            bool_levene = True;
+        }
+        #--------
+
+        t_val, p_val = stats.ttest_ind(label_0[feature], label_1[feature], equal_var = bool_levene)
+
+        p_values.append(p_val)
+        p_labels.append(feature)
+
+    i = 0
+
+    for feature in p_labels:
+        if(p_values[i] < alpha):
+        #print(f"La característica {feature} proporciona una buena separabilidad entre clases.")
+            features_selected_ttest.append({"feature": feature, "p_value": p_values[i]})
+    else:
+        print(f"La característica {feature} no proporciona una buena separabilidad entre clases.")
+        i = i+1
+
+    df_features_selected_ttest = pd.DataFrame(features_selected_ttest)
+    df_features_selected_ttest = df_features_selected_ttest.sort_values(by='p_value', ascending=True)
+    df_features_selected_ttest.reset_index(drop=True, inplace=True)
+    print(df_features_selected_ttest)
+
+    #Matriz de correlación
+    
+    matrix_correlation = df_features_selected_ttest.corr(method = "pearson")
+    #Revisar tanto correlaciones positivas como negativas
+    matrix_abs = matrix_correlation.abs()
+    #mask = np.triu(np.ones_like(matrix_abs, dtype=bool)) #Simetria de la matriz, se elimina triangulo superior
+    #reduced_matrix = matrix_abs.mask(mask)
+
+    pairs_correlated_features = []
+
+    reduced_matrix = matrix_abs.where(np.triu(np.ones(matrix_abs.shape),k=1).astype(np.bool))
+
+    df_features_selected_CorrTtest = df_features_selected_ttest.copy();
+
+    for i in range(reduced_matrix.shape[0]):
+        for j in range(i+1, reduced_matrix.shape[0]):
+            if reduced_matrix .iloc[i,j] >= 0.8:
+                label_i = reduced_matrix.index[i]
+                label_j = reduced_matrix.index[j]
+                pairs_correlated_features.append((label_i,label_j))
+                print(label_i, label_j)
+
+    for pair in pairs_correlated_features:
+        feature1 = df_features_selected_ttest.loc[pair[0]]
+        feature2 = df_features_selected_ttest.loc[pair[1]]
+
+        #Se eliminan las caracteristicas con mayor p-value de cada par
+
+        if (feature1.iloc[1] <= feature2.iloc[1]):
+            if(feature2 in df_features_selected_CorrTtest["feature"].values):
+                df_features_selected_CorrTtest.drop(feature2,inplace=True)
+        else:
+            if(feature1 in df_features_selected_CorrTtest["feature"].values):
+                df_features_selected_CorrTtest.drop(feature1,inplace=True)
+
+    print(df_features_selected_CorrTtest)
+
+    plt.figure(figsize=(10, 7))
+    sns.heatmap(df_features_selected_CorrTtest, annot=False, cmap="coolwarm", fmt=".2f", linewidths=0.5)
+    plt.title("Mapa de Calor Matriz de Correlación")
+    plt.show()
+
+
+
+
+    
+    #selector = SelectKBest(score_func=f_classif, k=5) #Número de características a seleccionar
+
+    #X_selected = selector.fit_transform(X, Y)
+
+    #selected_features = X.columns[selector.get_support()]
+    #f_scores = selector.scores_[selector.get_support()]
 
     #fs = ReliefF(n_neighbors=10, n_features_to_keep=5)
     #selected_features_relief = fs.fit_transform(X.values, Y.values)
 
-    print("Características seleccionadas ANOVA:", selected_features)
-    print("F-scores:", f_scores)
+    #print("Características seleccionadas ANOVA:", selected_features)
+    #print("F-scores:", f_scores)
 
     #print("Características seleccionadas ReliefF:", selected_features_relief)
 
