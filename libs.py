@@ -17,6 +17,7 @@ import os
 
 #función que divide el dataset en train/val/test.
 from sklearn.model_selection import train_test_split 
+from statsmodels.stats.multitest import multipletests 
 from sklearn.cluster import KMeans
  # para copiar archivos entre carpetas
 import shutil

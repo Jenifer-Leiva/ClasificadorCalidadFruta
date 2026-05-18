@@ -5,7 +5,7 @@ from skimage.feature import graycomatrix, graycoprops
 from sklearn.cluster import KMeans
 from sklearn.feature_extraction import image
 
-from libs import os,cv2, np, plt, mh, sns,pd, stats
+from libs import os,cv2, np, plt, mh, sns,pd, stats, multipletests# Para correción
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 import random
 from sklearn.feature_selection import SelectKBest, f_classif 
@@ -106,84 +106,6 @@ def caracteristicas_color_hsv(img, mask, alpha, fruta_estado="Fruta_Estado"):
 
     return dominant_hues[0], dominant_hues[1], Saturations[0], Saturations[1], Values[0], Values[1]#, hist_h_norm_flat
 
-def caracteristicas_color(img, mask, alpha):
-
-    img_gauss = cv2.GaussianBlur(img, (3, 3), 0)
-    img_gauss_median = cv2.medianBlur(img_gauss, 5)
-
-    # Extraer características de color
-    # 1. Transformar al espacio de color HSV
-    img_hsv = cv2.cvtColor(img_gauss_median, cv2.COLOR_RGB2HSV)
-    H = img_hsv[:, :, 0]
-    #H_mask = H[mask]
-    S = img_hsv[:, :, 1]
-    S[~mask] = 0
-    V = img_hsv[:, :, 2]
-    V[~mask] = 0
-
-    #Evitar valores de flash o fondo
-    #mask_valid[~mask] = 0
-    mask_complete = mask & (S > 20) & (V > 20) & (V < 240)
-    #mask_complete = mask & mask_valid
-
-    H_mask = H[mask_complete]
-
-    #HS_mask = img_hsv[mask_complete][:, :2]
-
-    # h_mean = np.mean(H)
-    # s_mean = np.mean(S)
-    # v_mean = np.mean(V)
-
-    # h_std = np.std(H)
-    # s_std = np.std(S)
-    # v_std = np.std(V)
-
-    #Histograma para el canal de Hue
-    # En OpenCV Hue está en el rango de 0 a 179
-    #hist_h = cv2.calcHist([H], [0], None, [180], [0, 180])
-    #hist_h_norm = hist_h / hist_h.sum()
-    #hist_h_norm_flat = hist_h_norm.flatten()
-
-    #Tonos dominantes usando KMeans
-    h = H_mask.reshape(-1, 1)
-    kmeans = KMeans(n_clusters=2, random_state=42, n_init=10)
-    kmeans.fit(h)
-    dominant_hues = np.sort(kmeans.cluster_centers_.flatten())
-
-    labels = kmeans.labels_
-
-    # Reconstruir imagen de clusters
-    segmented_H = np.zeros_like(H, dtype=float)
-    segmented_values_H = kmeans.cluster_centers_[labels].flatten()
-    segmented_H[mask_complete] = segmented_values_H
-    segmented_H[~mask_complete] = kmeans.cluster_centers_[0][0]
-
-    segmented_hsv = np.dstack((segmented_H, S, V)).astype(np.uint8)
-    segmented_rgb = cv2.cvtColor(segmented_hsv, cv2.COLOR_HSV2RGB)
-    segmented_rgba = np.dstack((segmented_rgb, alpha))
-    segmented_rgba_display = cv2.cvtColor(segmented_rgba, cv2.COLOR_RGBA2BGRA)
-
-    img_alpha = np.dstack((img, alpha))
-    img_display = cv2.cvtColor(img_alpha, cv2.COLOR_RGBA2BGRA)
-
-    # Visualización
-    plt.figure(figsize=(12, 5))
-
-    plt.subplot(1, 2, 1)
-    plt.imshow(img_display)
-    plt.title("Imagen original")
-    plt.axis('off')
-
-    plt.subplot(1, 2, 2)
-    plt.imshow(segmented_rgba_display)
-    plt.title("Clusters de color (K-Means)")
-    plt.axis('off')
-
-    plt.show()
-
-    print(np.unique(segmented_values_H))
-
-    return dominant_hues[0], dominant_hues[1]#, hist_h_norm_flat
 #--------------------------------------------------------
 # Características de textura: GLCM 
 #--------------------------------------------------------
@@ -198,10 +120,10 @@ def caracteristicas_textura_GLCM(img, mask):
     gray_image = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     gray_image[~mask] = 0
 
-    patches=image.extract_patches_2d(img,(16,16))
+    patches=image.extract_patches_2d(gray_image,(16,16))
 
     for patch in patches:
-        glcm = graycomatrix(patch, distances=[1], angles=[0, np.pi/4, np.pi/2, 3*np.pi/4], levels=256, symmetric=True, normed=True)
+        glcm = graycomatrix(patch.astype(np.uint8), distances=[1], angles=[0, np.pi/4, np.pi/2, 3*np.pi/4], levels=256, symmetric=True, normed=True)
         contrast = graycoprops(glcm, 'contrast')
         entropy = graycoprops(glcm, 'entropy')
         energy = graycoprops(glcm, 'energy')
@@ -218,9 +140,9 @@ def caracteristicas_textura_GLCM(img, mask):
         feature_vector_patch = [mean_contrast, mean_entropy, mean_energy, mean_homogeneity, mean_correlation]
         matrix_patches = np.column_stack((feature_vector_patch))
 
-        feature_vector_GLCM = np.std(features, axis=0)
+    feature_vector_GLCM = np.std(matrix_patches, axis=0)
 
-        return feature_vector_GLCM
+    return feature_vector_GLCM
 
     """
     glcm = graycomatrix(gray_image, distances=[5], angles=[0, np.pi/4, np.pi/2, 3*np.pi/4], levels=256, symmetric=True, normed=True)
@@ -280,19 +202,14 @@ def caracteristicas_textura_Frecuencia(img, mask):
     gray_image[~mask] = 0
 
 
-
-#def PCA(features_matrix, n_components=5):
-
-
 def diagramas(base_in="./DatasetFrutasAumentadas", out_dir="./galeria_resultados", features_matrix=None, first_column_name="fruit"):
 
     #Visualización de características
 
     labels_diagrams = ["Banana", "Mango"] if first_column_name == "fruit" else ["Fresco", "Podrido"]
 
-    if(first_column_name == "fruit"):
-        label_0 = features_matrix[features_matrix["first_column_name"] == 0]
-        label_1 = features_matrix[features_matrix["first_column_name"] == 1]
+    label_0 = features_matrix[features_matrix["first_column_name"] == 0]
+    label_1 = features_matrix[features_matrix["first_column_name"] == 1]
 
     for column in features_matrix.columns:  # Saltar las dos primeras columnas (fruit y state)
         if column == "fruit" or column == "state" or column == "fruit_state":
@@ -420,13 +337,20 @@ def prueba_caracteristicas(base_in, out_dir):
     #print(features_matrix)
     #print(labels)
 
+
+#Ttest, corrección FDR y matriz de correlación que descarta en base a p-value de ttest
+
 def feature_selection(out_dir, features_matrix=None, first_column_name="fruit"):
     #X = features
     #Y = Labels
 
     #X = features_matrix.drop(columns=["dominant_hue_1", "dominant_hue_2", "Saturation_1", "Saturation_2", "Value_1", "Value_2", "mean_contrast_GLCM", "mean_entropy_GLCM"])
-    X = features_matrix.drop(columns = 'first_column_name')
+    
+    features_selected_ttest = []
+    dfSelectedFeaturesComplete = features_matrix.copy()
+    
     Y = features_matrix[first_column_name]  # Usar la primera columna como etiqueta
+    X = features_matrix.drop(columns = 'first_column_name')
 
     #T-test (Two Tailed)
     #Hay diferencia entre las medias de las dos clases
@@ -439,14 +363,8 @@ def feature_selection(out_dir, features_matrix=None, first_column_name="fruit"):
     p_labels = []
 
     print(groups_.groups)
-
-    features_selected_ttest = []
     
     alpha = 0.05
-    #Degrees of freedom
-    df = len(label_0)+len(label_1)-2
-    #Tail
-    crit_t = stats.t.ppf(1 - alpha/2, df)
 
     for feature in X.columns:
 
@@ -454,10 +372,8 @@ def feature_selection(out_dir, features_matrix=None, first_column_name="fruit"):
         levene_stat, levene_p_value = stats.levene(label_0[feature], label_1[feature])
         print(levene_p_value)
 
-        if(levene_p_value > alpha) #Se asume que las clases tienen igual varianza
-        {
+        if(levene_p_value > alpha): #Se asume que las clases tienen igual varianza
             bool_levene = True;
-        }
         #--------
 
         t_val, p_val = stats.ttest_ind(label_0[feature], label_1[feature], equal_var = bool_levene)
@@ -473,24 +389,49 @@ def feature_selection(out_dir, features_matrix=None, first_column_name="fruit"):
             features_selected_ttest.append({"feature": feature, "p_value": p_values[i]})
     else:
         print(f"La característica {feature} no proporciona una buena separabilidad entre clases.")
+        dfSelectedFeaturesComplete.drop(feature, axis = 1, inplace = True)
         i = i+1
 
     df_features_selected_ttest = pd.DataFrame(features_selected_ttest)
     df_features_selected_ttest = df_features_selected_ttest.sort_values(by='p_value', ascending=True)
     df_features_selected_ttest.reset_index(drop=True, inplace=True)
+
+    #Corrección FDR
+    alpha_correction = 0.05
+    rejected, q_values, _, _ = multipletests(df_features_selected_ttest['p_value'], alpha=alpha_correction, method='fdr_bh')
+    df_features_selected_ttest['q_value'] = q_values
+    df_features_selected_ttest['significant'] = rejected
+
     print(df_features_selected_ttest)
 
+    features_to_remove_FDR = df_features_selected_ttest.loc[
+    ~df_features_selected_ttest['significant'],
+    'feature']
+
+    df_features_selected_ttest = df_features_selected_ttest[
+    df_features_selected_ttest['significant'] == True]
+    print(df_features_selected_ttest)
+
+    dfSelectedFeaturesComplete.drop(columns=features_to_remove_FDR, inplace=True)
+    dfSelectedFeaturesComplete.head()
+
     #Matriz de correlación
-    
-    matrix_correlation = df_features_selected_ttest.corr(method = "pearson")
+
+    matrix_correlation = dfSelectedFeaturesComplete.corr(method = "pearson")
     #Revisar tanto correlaciones positivas como negativas
     matrix_abs = matrix_correlation.abs()
-    #mask = np.triu(np.ones_like(matrix_abs, dtype=bool)) #Simetria de la matriz, se elimina triangulo superior
-    #reduced_matrix = matrix_abs.mask(mask)
 
     pairs_correlated_features = []
-
+    #Por simetria quedarse sin la diagonal y con el triangulo superior
     reduced_matrix = matrix_abs.where(np.triu(np.ones(matrix_abs.shape),k=1).astype(np.bool))
+
+    plt.figure(figsize=(10, 7))
+    sns.heatmap(reduced_matrix, annot=True, cmap="coolwarm", fmt=".2f", linewidths=0.5)
+    plt.title("Mapa de Calor Matriz de Correlación {first_column_name}")
+    plt.show()
+
+    path_mc1 = os.path.join(out_dir, f"MatrizCorrelacion{first_column_name}")
+    plt.savefig(path_mc1)
 
     df_features_selected_CorrTtest = df_features_selected_ttest.copy();
 
@@ -503,43 +444,40 @@ def feature_selection(out_dir, features_matrix=None, first_column_name="fruit"):
                 print(label_i, label_j)
 
     for pair in pairs_correlated_features:
-        feature1 = df_features_selected_ttest.loc[pair[0]]
-        feature2 = df_features_selected_ttest.loc[pair[1]]
+        feature1_row = df_features_selected_ttest.loc[pair[0]]
+        feature2_row = df_features_selected_ttest.loc[pair[1]]
 
         #Se eliminan las caracteristicas con mayor p-value de cada par
 
-        if (feature1.iloc[1] <= feature2.iloc[1]):
-            if(feature2 in df_features_selected_CorrTtest["feature"].values):
-                df_features_selected_CorrTtest.drop(feature2,inplace=True)
+        if (feature1_row.iloc[1] <= feature2_row.iloc[1]):
+            df_features_selected_CorrTtest = df_features_selected_CorrTtest[df_features_selected_CorrTtest["feature"] != pair[1]]
+            if pair[1] in dfSelectedFeaturesComplete.columns:
+                dfSelectedFeaturesComplete.drop(pair[1], axis = 1, inplace = True)
         else:
-            if(feature1 in df_features_selected_CorrTtest["feature"].values):
-                df_features_selected_CorrTtest.drop(feature1,inplace=True)
+            df_features_selected_CorrTtest = df_features_selected_CorrTtest[df_features_selected_CorrTtest["feature"] != pair[0]]
+            if pair[0] in dfSelectedFeaturesComplete.columns:
+                dfSelectedFeaturesComplete.drop(pair[0], axis = 1, inplace = True)
 
+    df_features_selected_CorrTtest.reset_index(drop=True, inplace=True)
     print(df_features_selected_CorrTtest)
 
+    dfSelectedFeaturesComplete.head()
+
+    dfSelectedFeaturesComplete.to_csv(os.path.join(out_dir, f"MatrizCaracteristicasSeleccion_{first_column_name}.csv"), index=False)
+
+    #Matriz de correlacion actualizada
+    matrix_correlation_2 = df_features_selected_CorrTtest.corr(method = "pearson")
+    matrix_abs_2 = matrix_correlation_2.abs()
+    reduced_matrix_2 = matrix_abs_2.where(np.triu(np.ones(matrix_abs_2.shape),k=1).astype(np.bool_))
+
     plt.figure(figsize=(10, 7))
-    sns.heatmap(df_features_selected_CorrTtest, annot=False, cmap="coolwarm", fmt=".2f", linewidths=0.5)
-    plt.title("Mapa de Calor Matriz de Correlación")
+    sns.heatmap(reduced_matrix_2, annot=True, cmap="coolwarm", fmt=".2f", linewidths=0.5)
+    plt.title(f"Mapa de Calor Matriz de Correlación Actualizada por P-valor {first_column_name}")
     plt.show()
 
+    path_mc2 = os.path.join(out_dir, f"MatrizCorrelacionTtest_{first_column_name}")
+    plt.savefig(path_mc2)
 
-
-
-    
-    #selector = SelectKBest(score_func=f_classif, k=5) #Número de características a seleccionar
-
-    #X_selected = selector.fit_transform(X, Y)
-
-    #selected_features = X.columns[selector.get_support()]
-    #f_scores = selector.scores_[selector.get_support()]
-
-    #fs = ReliefF(n_neighbors=10, n_features_to_keep=5)
-    #selected_features_relief = fs.fit_transform(X.values, Y.values)
-
-    #print("Características seleccionadas ANOVA:", selected_features)
-    #print("F-scores:", f_scores)
-
-    #print("Características seleccionadas ReliefF:", selected_features_relief)
 
 def extraer_caracteristicas(base_dir, out_dir):
     feature_vectors = []
