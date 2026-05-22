@@ -25,6 +25,7 @@ from modulo_aumentar import augmentar_dataset
 from modulo_dividir import dividir_guardar_multioutput
 from modulo_caracteristicas_color_textura import prueba_caracteristicas
 from modulo_caracteristicas_color_textura import extraer_caracteristicas
+from modulo_modeloSVM import SVM_Clasificador
 
 
 def main():
@@ -49,7 +50,7 @@ def main():
         base_in = os.path.join(base_dividida, subset)
         base_out = os.path.join("./DatasetFrutasSegmentadas", subset)
         division_segmentacion(base_in=base_in, base_out=base_out, size=128)
-    """
+    
     # 4. Data augmentation
     for subset in subsets:
         base_dir = os.path.join("./DatasetFrutasSegmentadas", subset)
@@ -65,9 +66,17 @@ def main():
         
         extraer_caracteristicas(base_dir=base_dir, out_dir=out_dir)
     
-    # 6. Extracción de características de color y textura
+    # 6. Extracción de características de forma
     extraer_caracteristicas_forma(base_dir="./DatasetFrutasAumentadas", out_dir="./galeria_resultados")
-    """
+    
+    SVM_Clasificador(
+        X_train, Y_train,
+        X_val, Y_val,
+        X_test, Y_test,
+        target_1="fresca",
+        target_2="podrida",
+        out_dir="./ResultadosSVM"
+    )
 
 
 if __name__ == "__main__":

@@ -1,4 +1,5 @@
 from libs import os, cv2, np
+import json
 
 # --- Funciones de augmentación ---
 def rotar(img, angle):
@@ -54,6 +55,7 @@ def augmentar_dataset(base_dir, out_dir, porcentaje=0.4):
         print(f"⚠️ No existe la carpeta {base_dir}, se omite.")
         return
 
+    all_labels = []
     for class_name in os.listdir(base_dir):
         class_path = os.path.join(base_dir, class_name)
         if not os.path.isdir(class_path):
@@ -96,11 +98,30 @@ def augmentar_dataset(base_dir, out_dir, porcentaje=0.4):
                 aug_img = voltear(img, mode=random.choice(["horizontal", "vertical"]))
             else:
                 aug_img = aplicar_en_mascara(img, lambda x: cambiar_brillo(x, factor=random.uniform(0.7, 1.5)))
-            
 
             filename = f"{os.path.splitext(f)[0]}_aug{i}.png"
             out_path = os.path.join(out_class_path, filename)
             cv2.imwrite(out_path, aug_img)
+
+        # Guardar etiquetas para la clase aumentada
+        fruta, estado = class_name.split("_") if "_" in class_name else (class_name, "")
+
+        for f in sorted(os.listdir(out_class_path)):
+            if not f.lower().endswith((".jpg", ".jpeg", ".png")):
+                continue
+
+            all_labels.append({
+                "class": class_name,
+                "file": f,
+                "tipo": fruta,
+                "estado": estado
+            })
+
+    # Guardar resumen global de etiquetas por subset
+    if all_labels:
+        summary_path = os.path.join(out_dir, "labels.json")
+        with open(summary_path, "w", encoding="utf-8") as f:
+            json.dump(all_labels, f, indent=4, ensure_ascii=False)
 
     print(f"✅ Data augmentation completado en {out_dir}")
 
