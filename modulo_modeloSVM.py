@@ -1,4 +1,4 @@
-from libs import os, cv2, np, plt, sns, pd
+from core.libs import os, cv2, np, plt, sns, pd
 from sklearn.svm import SVC
 from sklearn.model_selection import cross_val_score,  KFold, cross_val_predict
 from sklearn.metrics import (accuracy_score, recall_score, confusion_matrix, roc_auc_score, precision_score,  roc_curve)

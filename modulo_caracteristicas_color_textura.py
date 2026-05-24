@@ -5,7 +5,7 @@ from skimage.feature import graycomatrix, graycoprops
 from sklearn.cluster import KMeans
 from sklearn.feature_extraction import image
 
-from libs import os,cv2, np, plt, mh, sns,pd, stats, multipletests# Para correción
+from core.libs import os,cv2, np, plt, mh, sns,pd, stats, multipletests# Para correción
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler, StandardScaler
 import random
 from sklearn.feature_selection import SelectKBest, f_classif 

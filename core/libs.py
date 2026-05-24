@@ -19,9 +19,10 @@ import os
 from sklearn.model_selection import train_test_split 
 from statsmodels.stats.multitest import multipletests 
 from sklearn.cluster import KMeans
- # para copiar archivos entre carpetas
+# para copiar archivos entre carpetas
 import shutil
-
+# para interfaz
+import customtkinter as ctk
 
 #VER
 print("LIBRERIAS")

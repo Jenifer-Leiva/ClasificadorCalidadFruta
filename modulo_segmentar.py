@@ -1,5 +1,5 @@
 
-from libs import os, cv2, np, plt
+from core.libs import os, cv2, np, plt
 from sklearn.cluster import KMeans
 #--------------------------------------------------------
 # PREPROCESAMIENTO
