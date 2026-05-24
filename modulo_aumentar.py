@@ -1,4 +1,4 @@
-from libs import os, cv2, np
+from core.libs import os, cv2, np
 import json
 
 # --- Funciones de augmentación ---
@@ -23,7 +23,7 @@ def cambiar_brillo(img, factor=1.2):
 
 # --- Pipeline ---
 import random
-from libs import os, cv2, np
+from core.libs import os, cv2, np
 
 
 def aplicar_en_mascara(img, funcion_aug):

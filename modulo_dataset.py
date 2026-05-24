@@ -1,7 +1,7 @@
 #--------------------------------------------------------
 # CARGA DE DATASET
 #--------------------------------------------------------
-from libs import zipfile, np, cv2, os
+from core.libs import zipfile, np, cv2, os
 
 size = 128;
 def cargar_dataset(zip_path="DatasetFrutas.zip", extract_path="./DatasetFrutas", size=128):
