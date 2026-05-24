@@ -76,9 +76,6 @@ def dividir_guardar_multioutput(base_in="./DatasetFrutas", size=128, output_root
     def dividir_guardar(x_split, y_tipo_split, y_estado_split, split_name):
         labels_info = []
 
-        img_dir = os.path.join(output_root, split_name, "images")
-        os.makedirs(img_dir, exist_ok=True)
-
         for i, (img_flat, tipo, estado) in enumerate(zip(x_split, y_tipo_split, y_estado_split)):
             img = img_flat.reshape(size, size, 3)
 
@@ -88,7 +85,11 @@ def dividir_guardar_multioutput(base_in="./DatasetFrutas", size=128, output_root
             else:
                 img_uint8 = img.astype(np.uint8)
 
-            filename = f"img_{i}.jpg"
+            class_folder = f"{le_tipo.inverse_transform([tipo])[0]}_{le_estado.inverse_transform([estado])[0]}"
+            img_dir = os.path.join(output_root, split_name, class_folder)
+            os.makedirs(img_dir, exist_ok=True)
+
+            filename = f"{class_folder}_{i}.jpg"
             cv2.imwrite(os.path.join(img_dir, filename), img_uint8)
 
             labels_info.append({
