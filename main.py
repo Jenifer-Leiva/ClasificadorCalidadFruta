@@ -23,8 +23,8 @@ from modulo_dataset import cargar_dataset, normalizar
 from modulo_segmentar import division_segmentacion, segmentar_guardar, recortar_fruta
 from modulo_aumentar import augmentar_dataset
 from modulo_dividir import dividir_guardar_multioutput
-from modulo_caracteristicas_color_textura import extraer_caracteristicas_tipo_estado
-from modulo_modeloSVM import SVM_Clasificador
+from modulo_caracteristicas_color_textura import extraer_caracteristicas_tipo_estado, extract_features_test
+from modulo_modeloSVM import modelo_Completo
 
 
 def main():
@@ -45,7 +45,8 @@ def main():
 
     # Rutas base
     base_dividida = "./DatasetFrutasDivididas"
-    subsets = ["train", "val"]  # solo aplicar a estas
+    #subsets_segmentar = ["train", "val", "test"]  # solo aplicar a estas
+    subsets = ["train"]#, "val"] 
 
     # 3. Segmentar y guardar máscaras
     for subset in subsets:
@@ -61,26 +62,19 @@ def main():
 
     
     # 6. Extracción de características de color y textura
-    for subset in subsets:
-        base_dir = os.path.join("./DatasetFrutasAumentadas", subset)
-        out_dir = os.path.join("./galeria_resultados", subset)
+    #for subset in subsets:
+    #    base_dir = os.path.join("./DatasetFrutasAumentadas", subset)
+    #    out_dir = os.path.join("./galeria_resultados", subset)
         #prueba_caracteristicas(base_in= base_dir, out_dir= out_dir)
         
-        extraer_caracteristicas_tipo_estado(base_dir=base_dir, out_dir=out_dir)
-   
+    #    features_matrix_tipo_fruta_train, features_matrix_estado_fruta_train,  selected_features_tipo, selected_features_state = extraer_caracteristicas_tipo_estado(base_dir=base_dir, out_dir=out_dir)
     
     # 6. Extracción de características de forma
-    extraer_caracteristicas_forma(base_dir="./DatasetFrutasAumentadas", out_dir="./galeria_resultados")
-
-    # Llamar al clasificador SVM para predecir el estado (Fresh vs Rotten)
-    SVM_Clasificador(
-        X_train, Y_estado_train,
-        X_val, Y_estado_val,
-        X_test, Y_estado_test,
-        target_1="Fresh",
-        target_2="Rotten",
-        out_dir="./ResultadosSVM"
-    )
+    #extraer_caracteristicas_forma(base_dir="./DatasetFrutasAumentadas", out_dir="./galeria_resultados")
+    
+    #features_matrix_tipo_fruta_test, features_matrix_estado_fruta_test = extract_features_test(base_dir="./DatasetFrutasSegmentadas/test", out_dir="./galeria_resultados/test", features_selected_fruit = selected_features_tipo, features_Selected_state = selected_features_state)
+    
+    modelo_Completo(base_dir_train="./DatasetFrutasSegmentadas/train", base_dir_test="./DatasetFrutasSegmentadas/test")
 
 
 if __name__ == "__main__":
