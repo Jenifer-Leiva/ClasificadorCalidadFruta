@@ -33,7 +33,7 @@ def aplicar_en_mascara(img):
     
     #return np.dstack((rgb_aug, alpha))
 
-def caracteristicas_color_hsv(img, mask, alpha, fruta_estado="Fruta_Estado"):
+def caracteristicas_color_hsv(img, mask, alpha):
 
     #Suavizar para hacer más facil la segmentación 
     img_gauss = cv2.GaussianBlur(img, (3, 3), 0)
@@ -220,7 +220,7 @@ def caracteristicas_textura_Haralick(img, mask):
     #Características de textura Frecuencia: Discrete Wavelet Features (DWT)
 #--------------------------------------------------------
 
-def diagramas(base_in="./DatasetFrutasAumentadas", out_dir="./galeria_resultados", features_matrix=None, first_column_name="fruit"):
+def diagramas(out_dir="./galeria_resultados", features_matrix=None, first_column_name="fruit"):
 
     #Visualización de características
 
@@ -453,7 +453,7 @@ def feature_selection(out_dir, features_matrix=None, first_column_name="fruit"):
     plt.title(f"Mapa de Calor Matriz de Correlación {first_column_name}")
     path_mc1 = os.path.join(out_dir, f"MatrizCorrelacion{first_column_name}")
     plt.savefig(path_mc1)
-    plt.show()
+    #plt.show()
 
     df_features_selected_CorrTtest = df_features_selected_ttest.copy();
 
@@ -501,7 +501,7 @@ def feature_selection(out_dir, features_matrix=None, first_column_name="fruit"):
     plt.title(f"Mapa de Calor Matriz de Correlación Actualizada por P-valor {first_column_name}")
     path_mc2 = os.path.join(out_dir, f"MatrizCorrelacionTtest_{first_column_name}")
     plt.savefig(path_mc2)
-    plt.show()
+    #plt.show()
 
     return dfSelectedFeaturesComplete
 
@@ -618,3 +618,237 @@ def extraer_caracteristicas_tipo_estado(base_dir, out_dir):
     diagramas(base_dir, out_dir, features_matrix_estado_fruta, first_column_name="state")
 
     print("Extracción de características de color y textura completada") 
+
+    selected_features_tipo = features_matrix_tipo_fruta.columns.tolist()
+    selected_features_state = features_matrix_estado_fruta.columns.tolist()
+
+
+    return features_matrix_tipo_fruta, features_matrix_estado_fruta, selected_features_tipo, selected_features_state
+
+def extract_features_test(base_dir, out_dir, features_selected_fruit, features_Selected_state):
+    feature_vectors = []
+
+    # recorrer todas las carpetas de clases dentro de base_in
+    for class_name in os.listdir(base_dir):
+        print(f"Procesando clase: {class_name}")
+        class_path = os.path.join(base_dir, class_name)
+        if not os.path.isdir(class_path):
+            continue
+        files = [f for f in os.listdir(class_path) if f.lower().endswith((".jpg",".jpeg",".png"))]
+
+        
+        for f in files:
+            src = os.path.join(class_path, f)
+            img = cv2.imread(src, cv2.IMREAD_UNCHANGED)
+            if img is not None:
+                rgb, mask, alpha = aplicar_en_mascara(img)
+
+                class_parts = class_name.split("_")
+                fruta = class_parts[0]
+                estado = class_parts[1]
+
+                #fruta = labelsImg_dict[f]["tipo"]
+                #estado = labelsImg_dict[f]["estado"]
+
+                features_vector_img = []
+                features_vector_img.append(fruta)
+                features_vector_img.append(estado)
+                features_vector_img.append(f"{fruta}_{estado}")
+                features_vector_img.extend(caracteristicas_color_hsv(rgb, mask, alpha, fruta_estado=f"{fruta}_{estado}"))
+                features_vector_img.extend(caracteristicas_textura_GLCM(rgb, mask))
+                features_vector_img.extend(caracteristicas_textura_Haralick(rgb, mask))
+
+                #feature_vector_img = np.concatenate([[fruta],[estado], features_vector_img])
+                feature_vectors.append(features_vector_img)
+
+    #features_matrix = np.array(feature_vectors)
+    features_matrix = pd.DataFrame(feature_vectors, columns=["fruit","state", "fruit_state","dominant_hue_1", "dominant_hue_2",
+                                                                "Saturation_1", "Saturation_2", "Value_1", "Value_2",
+                                                                "mean_contrast_GLCM", "mean_entropy_GLCM",
+                                                                "mean_energy_GLCM", "mean_homogeneity_GLCM", "mean_correlation_GLCM",
+                                                                "Angular Second Moment","Contrast",
+                                                                "Correlation",
+                                                                "Sum of Squares (Variance)",
+                                                                "Inverse Difference Moment",
+                                                                "Sum Average",
+                                                                "Sum Variance",
+                                                                "Sum Entropy",
+                                                                "Entropy",
+                                                                "Difference Variance",
+                                                                "Difference Entropy",
+                                                                "Information Measure of Correlation 1",
+                                                                "Information Measure of Correlation 2"  ])  
+
+    #Etiquetas numericas para fruta y estado (0 = Banana, 1 = Mango, 0 = Fresh, 1 = Rotten)
+    le =LabelEncoder()
+    features_matrix["fruit"] = le.fit_transform(features_matrix["fruit"])
+    features_matrix["state"] = le.fit_transform(features_matrix["state"])
+    features_matrix["fruit_state"] = le.fit_transform(features_matrix["fruit_state"])
+
+    #Normalizar características 
+    scaler = StandardScaler()
+    numeric_cols = features_matrix.columns.difference(
+    ["fruit", "state", "fruit_state"], sort=False) # Excluir columnas de etiquetas
+    features_matrix_norm = features_matrix.copy()
+    features_matrix_norm[numeric_cols] = scaler.fit_transform(
+    features_matrix[numeric_cols])
+
+    print(features_matrix_norm.head())
+
+    os.makedirs(out_dir, exist_ok=True)
+    features_matrix_norm.to_csv(os.path.join(out_dir, "MatrizCaracteristicasNormalizadaTest.csv"), index=False)
+
+    #Matrices especificas para cada tipo de fruta y estado
+    #Se eliminan las caracteristicas que no hacen parte de las seleccionadas
+
+    features_matrix_tipo_fruta = features_matrix_norm.copy()
+    features_matrix_tipo_fruta = features_matrix_tipo_fruta.drop(columns=['state', 'fruit_state'])
+    features_matrix_tipo_fruta = features_matrix_tipo_fruta.drop(columns=[col for col in features_matrix_tipo_fruta.columns if col not in features_selected_fruit])
+
+    features_matrix_tipo_fruta.to_csv(os.path.join(out_dir, "MatrizCaracteristicasNormalizadaTest_TipoFruta.csv"), index=False)
+   
+    print(features_matrix_tipo_fruta.head())
+
+    features_matrix_estado_fruta = features_matrix_norm.copy()
+    features_matrix_estado_fruta = features_matrix_estado_fruta.drop(columns=['fruit', 'fruit_state'])
+    features_matrix_estado_fruta = features_matrix_estado_fruta.drop(columns=[col for col in features_matrix_estado_fruta.columns if col not in features_Selected_state])
+    
+    features_matrix_estado_fruta.to_csv(os.path.join(out_dir, "MatrizCaracteristicasNormalizadaTest_EstadoFruta.csv"), index=False)
+
+    print(features_matrix_estado_fruta.head())
+
+    print("Extracción de características para test realizada") 
+
+    return features_matrix_tipo_fruta, features_matrix_estado_fruta
+
+
+#Funciones utilizadas para el entrenamiento y test del modelo 
+
+def extraer_caracteristicas_Final_Test(X_test, Y_test, features_selected, first_column_name, out_dir="./galeria_resultados/val"):
+    feature_vectors = []
+
+    i=0
+    for image, label in zip(X_test, Y_test):
+        src = image
+        img = cv2.imread(src, cv2.IMREAD_UNCHANGED)
+        if img is not None:
+            rgb, mask, alpha = aplicar_en_mascara(img)
+            label_ = label
+
+            features_vector_img = []
+            features_vector_img.append(label_)
+            features_vector_img.extend(caracteristicas_color_hsv(rgb, mask, alpha))
+            features_vector_img.extend(caracteristicas_textura_GLCM(rgb, mask))
+            features_vector_img.extend(caracteristicas_textura_Haralick(rgb, mask))
+
+            feature_vectors.append(features_vector_img)
+
+        i = i+1
+
+    #features_matrix = np.array(feature_vectors)
+    features_matrix = pd.DataFrame(feature_vectors, columns=[first_column_name,"dominant_hue_1", "dominant_hue_2",
+                                                                "Saturation_1", "Saturation_2", "Value_1", "Value_2",
+                                                                "mean_contrast_GLCM", "mean_entropy_GLCM",
+                                                                "mean_energy_GLCM", "mean_homogeneity_GLCM", "mean_correlation_GLCM",
+                                                                "Angular Second Moment","Contrast",
+                                                                "Correlation",
+                                                                "Sum of Squares (Variance)",
+                                                                "Inverse Difference Moment",
+                                                                "Sum Average",
+                                                                "Sum Variance",
+                                                                "Sum Entropy",
+                                                                "Entropy",
+                                                                "Difference Variance",
+                                                                "Difference Entropy",
+                                                                "Information Measure of Correlation 1",
+                                                                "Information Measure of Correlation 2"  ])  
+
+    #Etiquetas numericas para fruta y estado (0 = Banana, 1 = Mango, 0 = Fresh, 1 = Rotten)
+    le =LabelEncoder()
+    features_matrix[first_column_name] = le.fit_transform(features_matrix[first_column_name])
+
+    #Normalizar características 
+    scaler = StandardScaler()
+    numeric_cols = features_matrix.columns.difference(
+    [first_column_name], sort=False) # Excluir columnas de etiquetas
+
+    #Matrices especificas para cada tipo de fruta y estado
+    features_matrix_norm = features_matrix.copy()
+    features_matrix_norm[numeric_cols] = scaler.fit_transform(
+    features_matrix[numeric_cols])
+
+    print(features_matrix_norm.head())
+
+    os.makedirs(out_dir, exist_ok=True)
+    features_matrix_filtrada = features_matrix_norm.drop(columns=[col for col in features_matrix_norm.columns if col not in features_selected])
+    features_matrix_filtrada.to_csv(os.path.join(out_dir, f"MatrizCaracteristicasNormalizada_Test{first_column_name}.csv"), index=False)
+
+    print("Extracción de características de color y textura completada para test") 
+
+    return features_matrix_filtrada
+
+def extraer_caracteristicas_Final(X_train, Y_train, first_column_name, out_dir="./galeria_resultados/train"):
+    feature_vectors = []
+
+    for image, label in zip(X_train, Y_train):
+        src = image
+        img = cv2.imread(src, cv2.IMREAD_UNCHANGED)
+        if img is not None:
+            rgb, mask, alpha = aplicar_en_mascara(img)
+            label_ = label
+
+            features_vector_img = []
+            features_vector_img.append(label)
+            features_vector_img.extend(caracteristicas_color_hsv(rgb, mask, alpha))
+            features_vector_img.extend(caracteristicas_textura_GLCM(rgb, mask))
+            features_vector_img.extend(caracteristicas_textura_Haralick(rgb, mask))
+
+            feature_vectors.append(features_vector_img)
+
+    #features_matrix = np.array(feature_vectors)
+    features_matrix = pd.DataFrame(feature_vectors, columns=[first_column_name,"dominant_hue_1", "dominant_hue_2",
+                                                                "Saturation_1", "Saturation_2", "Value_1", "Value_2",
+                                                                "mean_contrast_GLCM", "mean_entropy_GLCM",
+                                                                "mean_energy_GLCM", "mean_homogeneity_GLCM", "mean_correlation_GLCM",
+                                                                "Angular Second Moment","Contrast",
+                                                                "Correlation",
+                                                                "Sum of Squares (Variance)",
+                                                                "Inverse Difference Moment",
+                                                                "Sum Average",
+                                                                "Sum Variance",
+                                                                "Sum Entropy",
+                                                                "Entropy",
+                                                                "Difference Variance",
+                                                                "Difference Entropy",
+                                                                "Information Measure of Correlation 1",
+                                                                "Information Measure of Correlation 2"  ])  
+
+    #Etiquetas numericas para fruta y estado (0 = Banana, 1 = Mango, 0 = Fresh, 1 = Rotten)
+    le =LabelEncoder()
+    features_matrix[first_column_name] = le.fit_transform(features_matrix[first_column_name])
+
+    #Normalizar características 
+    scaler = StandardScaler()
+    numeric_cols = features_matrix.columns.difference(
+    [first_column_name], sort=False) # Excluir columnas de etiquetas
+
+    #Matrices especificas para cada tipo de fruta y estado
+    features_matrix_norm = features_matrix.copy()
+    features_matrix_norm[numeric_cols] = scaler.fit_transform(
+    features_matrix[numeric_cols])
+
+    print(features_matrix_norm.head())
+
+    os.makedirs(out_dir, exist_ok=True)
+    features_matrix_norm.to_csv(os.path.join(out_dir, f"MatrizCaracteristicasNormalizada_{first_column_name}.csv"), index=False)
+
+    #Solo se grafican los boxplot de las features seleccionadas
+    features_matrix_filtrada = feature_selection(out_dir, features_matrix_norm, first_column_name = first_column_name)
+    diagramas(out_dir, features_matrix_filtrada, first_column_name = first_column_name)
+
+    print("Extracción de características de color y textura completada") 
+    selected_features = features_matrix_filtrada.columns.tolist()
+
+    return features_matrix_filtrada, selected_features
+
+    
