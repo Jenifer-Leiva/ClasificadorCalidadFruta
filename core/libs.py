@@ -23,6 +23,7 @@ from sklearn.cluster import KMeans
 import shutil
 # para interfaz
 import customtkinter as ctk
+import joblib
 
 #VER
 print("LIBRERIAS")

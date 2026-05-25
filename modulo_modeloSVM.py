@@ -4,7 +4,7 @@ from modulo_caracteristicas_forma import extraer_caracteristicas_forma
 from modulo_aumentar import augmentar_dataset
 from modulo_caracteristicas_color_textura_forma import extraer_caracteristicas_Final, extraer_caracteristicas_Final_Test
 
-from core.libs import os, cv2, np, plt, sns, pd
+from core.libs import os, cv2, np, plt, sns, pd, joblib
 from sklearn.svm import SVC
 from sklearn.model_selection import cross_val_score,  StratifiedKFold, cross_val_predict
 from sklearn.metrics import (accuracy_score, recall_score, confusion_matrix, roc_auc_score, precision_score,  roc_curve)
@@ -45,6 +45,7 @@ def Train_Final(clasificador, first_column_name, target1, target2, features_matr
 
     #Entreamiento con todo el dataset
     model.fit(X_train, Y_train)
+    joblib.dump(model, f'./Interfaz_Clasificar_Fruta/trained_model_{first_column_name}.pkl')
 
     return model
 
@@ -350,27 +351,33 @@ def modelo_Completo(base_dir_train_val, base_dir_train_test, base_dir_test):
 
     print("Extracción y seleccion de caracteristicas con train (70%) para fruit")
     features_matrix_fruit, features_select_fruit = Seleccion_Caracteristicas_Train(X_aug, Y_fruit_aug, 'fruit')
-    print("Extracción y seleccion de caracteristicas con train (70%) para fruit Validación")
+    pd.DataFrame(features_select_fruit, columns=["feature"]).to_csv("./Interfaz_Clasificar_Fruta/features_selected_fruit.csv", index=False)
+    
+    #print("Extracción y seleccion de caracteristicas con train (70%) para fruit Validación")
     features_matrix_fruit_val, features_select_fruit_val = Seleccion_Caracteristicas_Train(X_seg, Y_fruit_seg, 'fruit', "./galeria_resultados/val")
 
-    print("Extracción y seleccion de caracteristicas test (30%) para fruit")
+    #print("Extracción y seleccion de caracteristicas test (30%) para fruit")
     features_matrix_test_fruit = Seleccion_Caracteristicas_Test(X_test, Y_fruit_test, "fruit", features_select_fruit)
 
     print("Extracción y seleccion de caracteristicas con train (70%) para state")
     features_matrix_state, features_select_state = Seleccion_Caracteristicas_Train(X_aug, Y_state_aug, 'state')
-    
-    print("Extracción y seleccion de caracteristicas con train (70%) para state Validación")
+    pd.DataFrame(features_select_state, columns=["feature"]).to_csv("./Interfaz_Clasificar_Fruta/features_selected_state.csv", index=False)
+
+    #print("Extracción y seleccion de caracteristicas con train (70%) para state Validación")
     features_matrix_state_val, features_select_state_val = Seleccion_Caracteristicas_Train(X_seg, Y_state_seg, 'state',"./galeria_resultados/val")
 
-    print("Extracción y seleccion de caracteristicas test (30%) para state")
+    #print("Extracción y seleccion de caracteristicas test (30%) para state")
     features_matrix_test_state = Seleccion_Caracteristicas_Test(X_test, Y_state_test, 'state', features_select_state)
 
     print("Fruit:", le_fruit.classes_)
     print("State:", le_state.classes_)
 
-    Cross_Validation_completo()
+    joblib.dump(le_fruit, "./Interfaz_Clasificar_Fruta/label_encoder_fruit.pkl")
+    joblib.dump(le_state, "./Interfaz_Clasificar_Fruta/label_encoder_state.pkl")
 
-    Test_completo()
+    #Cross_Validation_completo()
+
+    #Test_completo()
 
 
    

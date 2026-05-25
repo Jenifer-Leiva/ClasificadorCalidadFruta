@@ -1,0 +1,20 @@
+feature
+state
+dominant_hue_1
+dominant_hue_2
+Saturation_1
+Saturation_2
+Value_1
+Value_2
+mean_entropy_GLCM
+Correlation
+Sum Average
+Sum Variance
+Information Measure of Correlation 1
+Compacidad
+Excentricidad
+hu1
+hu2
+hu3
+hu5
+hu6

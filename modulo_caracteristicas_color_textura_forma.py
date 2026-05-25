@@ -5,7 +5,7 @@ from skimage.feature import graycomatrix, graycoprops
 from sklearn.cluster import KMeans
 from sklearn.feature_extraction import image
 
-from core.libs import os,cv2, np, plt, mh, sns,pd, stats, multipletests# Para correción
+from core.libs import os,cv2, np, plt, mh, sns,pd, stats, multipletests, joblib# Para correción
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler, StandardScaler
 import random
 from sklearn.feature_selection import SelectKBest, f_classif 
@@ -497,14 +497,14 @@ def extraer_caracteristicas_Final_Test(X_test, Y_test, features_selected, first_
     #print(le.classes_)
 
     #Normalizar características 
-    scaler = StandardScaler()
+    scaler = joblib.load('"./Interfaz_Clasificar_Fruta/scaler.pkl')
+    #scaler = StandardScaler()
     numeric_cols = features_matrix.columns.difference(
     [first_column_name], sort=False) # Excluir columnas de etiquetas
 
     #Matrices especificas para cada tipo de fruta y estado
     features_matrix_norm = features_matrix.copy()
-    features_matrix_norm[numeric_cols] = scaler.fit_transform(
-    features_matrix[numeric_cols])
+    features_matrix_norm[numeric_cols] = scaler.transform(features_matrix[numeric_cols])
 
     print(features_matrix_norm.head())
 
@@ -569,6 +569,9 @@ def extraer_caracteristicas_Final(X_train, Y_train, first_column_name, out_dir="
     features_matrix_norm = features_matrix.copy()
     features_matrix_norm[numeric_cols] = scaler.fit_transform(
     features_matrix[numeric_cols])
+
+    if(out_dir == "./galeria_resultados/train" and first_column_name == 'fruit'):
+        joblib.dump(scaler, "./Interfaz_Clasificar_Fruta/scaler.pkl")
 
     print(features_matrix_norm.head())
 

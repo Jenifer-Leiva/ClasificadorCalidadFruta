@@ -25,7 +25,6 @@ from modulo_aumentar import augmentar_dataset
 from modulo_dividir import dividir_guardar_multioutput
 from modulo_modeloSVM import modelo_Completo
 
-
 def main():
     
     
