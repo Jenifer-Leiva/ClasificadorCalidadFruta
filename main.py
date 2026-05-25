@@ -28,9 +28,11 @@ from modulo_modeloSVM import modelo_Completo
 
 def main():
     
+    
+    """
     # PREPARACION DE LOS DATOS
 
-    """# 1. Cargar dataset completo
+    # 1. Cargar dataset completo
     x, y, class_names = cargar_dataset()
 
     # 2. Normalizar
@@ -38,7 +40,6 @@ def main():
 
     # 3. Dividir (obtener splits para entrenamiento/validacion/test)
     X_train, Y_tipo_train, Y_estado_train, \
-    X_val, Y_tipo_val, Y_estado_val, \
     X_test, Y_tipo_test, Y_estado_test, \
     le_tipo, le_estado = dividir_guardar_multioutput(base_in="./DatasetFrutas", size=128, output_root="./DatasetFrutasDivididas")
 
@@ -57,11 +58,13 @@ def main():
     for subset in subsets_aumentar:
         base_dir = os.path.join("./DatasetFrutasSegmentadas", subset)
         out_dir = os.path.join("./DatasetFrutasAumentadas", subset)
-        augmentar_dataset(base_dir=base_dir, out_dir=out_dir, porcentaje=0.4)"""
+        augmentar_dataset(base_dir=base_dir, out_dir=out_dir, porcentaje=0.4)
+
+    """
 
     
     # 6. Extracción de características de color,textura,forma
-    modelo_Completo(base_dir_train="./DatasetFrutasSegmentadas/train", 
+    modelo_Completo(base_dir_train_val="./DatasetFrutasSegmentadas/train", base_dir_train_test="./DatasetFrutasAumentadas/train", 
                     base_dir_test="./DatasetFrutasSegmentadas/test")
 
 

@@ -17,9 +17,9 @@ from sklearn.linear_model import LogisticRegression
 #X -> Explanatory variables
 #Y -> Target Variable
 
-def Seleccion_Caracteristicas_Train(X, Y, first_column_name):
+def Seleccion_Caracteristicas_Train(X, Y, first_column_name, out_dir="./galeria_resultados/train"):
     
-    features_matrix, features_select = extraer_caracteristicas_Final(X, Y, first_column_name, out_dir="./galeria_resultados/train")
+    features_matrix, features_select = extraer_caracteristicas_Final(X, Y, first_column_name, out_dir)
 
     return features_matrix, features_select
 
@@ -220,7 +220,7 @@ def Cross_Validation_completo():
     target2 = 'Mango'
     first_column_name = 'fruit'
 
-    features_matrix_fruit = pd.read_csv(f"./galeria_resultados/train/MatrizCaracteristicasNormalizada_{first_column_name}.csv")
+    features_matrix_fruit = pd.read_csv(f"./galeria_resultados/val/MatrizCaracteristicasNormalizada_{first_column_name}.csv")
 
     Cross_Validation('svm', features_matrix_fruit, target1, target2, first_column_name, out_dir = "./galeria_resultados/test")
     Cross_Validation('lr', features_matrix_fruit, target1, target2, first_column_name, out_dir = "./galeria_resultados/test")
@@ -231,7 +231,7 @@ def Cross_Validation_completo():
     target2 = 'Dañado'
     first_column_name = 'state'
 
-    features_matrix_state = pd.read_csv(f"./galeria_resultados/train/MatrizCaracteristicasNormalizada_{first_column_name}.csv")
+    features_matrix_state = pd.read_csv(f"./galeria_resultados/val/MatrizCaracteristicasNormalizada_{first_column_name}.csv")
 
 
     Cross_Validation('svm', features_matrix_state, target1, target2, first_column_name, out_dir = "./galeria_resultados/test")
@@ -350,12 +350,17 @@ def modelo_Completo(base_dir_train_val, base_dir_train_test, base_dir_test):
 
     print("Extracción y seleccion de caracteristicas con train (70%) para fruit")
     features_matrix_fruit, features_select_fruit = Seleccion_Caracteristicas_Train(X_aug, Y_fruit_aug, 'fruit')
+    print("Extracción y seleccion de caracteristicas con train (70%) para fruit Validación")
+    features_matrix_fruit_val, features_select_fruit_val = Seleccion_Caracteristicas_Train(X_seg, Y_fruit_seg, 'fruit', "./galeria_resultados/val")
 
     print("Extracción y seleccion de caracteristicas test (30%) para fruit")
     features_matrix_test_fruit = Seleccion_Caracteristicas_Test(X_test, Y_fruit_test, "fruit", features_select_fruit)
 
     print("Extracción y seleccion de caracteristicas con train (70%) para state")
     features_matrix_state, features_select_state = Seleccion_Caracteristicas_Train(X_aug, Y_state_aug, 'state')
+    
+    print("Extracción y seleccion de caracteristicas con train (70%) para state Validación")
+    features_matrix_state_val, features_select_state_val = Seleccion_Caracteristicas_Train(X_seg, Y_state_seg, 'state',"./galeria_resultados/val")
 
     print("Extracción y seleccion de caracteristicas test (30%) para state")
     features_matrix_test_state = Seleccion_Caracteristicas_Test(X_test, Y_state_test, 'state', features_select_state)
