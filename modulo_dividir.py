@@ -7,9 +7,8 @@ from modulo_dataset import cargar_dataset
 
 def dividir_guardar_multioutput(base_in="./DatasetFrutas", size=128, output_root="./DatasetFrutasDivididas"):
     """
-    Divide el dataset en train/val/test para multi-output:
-    - tipo de fruta
-    - estado de fruta
+    Divide el dataset en train/test para multi-output.
+    La validación se realizará posteriormente usando K-Fold.
     """
 
     # --------------------------------------------------
@@ -46,28 +45,18 @@ def dividir_guardar_multioutput(base_in="./DatasetFrutas", size=128, output_root
     y_strat = np.array([f"{t}_{e}" for t, e in zip(y_tipo, y_estado)])
 
     # --------------------------------------------------
-    # 5. DIVISIÓN TRAIN / VAL / TEST
+    # 5. DIVISIÓN TRAIN / TEST
     # --------------------------------------------------
-    x_train, x_temp, y_tipo_train, y_tipo_temp, y_estado_train, y_estado_temp = train_test_split(
+    x_train, x_test, y_tipo_train, y_tipo_test, y_estado_train, y_estado_test = train_test_split(
         x, y_tipo, y_estado,
         test_size=0.30,
         stratify=y_strat,
         random_state=42
     )
 
-    # segunda estratificación
-    y_strat_temp = np.array([f"{t}_{e}" for t, e in zip(y_tipo_temp, y_estado_temp)])
-
-    x_val, x_test, y_tipo_val, y_tipo_test, y_estado_val, y_estado_test = train_test_split(
-        x_temp, y_tipo_temp, y_estado_temp,
-        test_size=0.50,
-        stratify=y_strat_temp,
-        random_state=42
-    )
 
     print("DIVISIÓN DE DATOS")
     print("Train:", x_train.shape)
-    print("Val:", x_val.shape)
     print("Test:", x_test.shape)
 
     # --------------------------------------------------
@@ -108,12 +97,10 @@ def dividir_guardar_multioutput(base_in="./DatasetFrutas", size=128, output_root
     # 7. GUARDAR SPLITS
     # --------------------------------------------------
     dividir_guardar(x_train, y_tipo_train, y_estado_train, "train")
-    dividir_guardar(x_val, y_tipo_val, y_estado_val, "val")
     dividir_guardar(x_test, y_tipo_test, y_estado_test, "test")
 
     return (
         x_train, y_tipo_train, y_estado_train,
-        x_val, y_tipo_val, y_estado_val,
         x_test, y_tipo_test, y_estado_test,
         le_tipo, le_estado
     )
@@ -149,7 +136,6 @@ def mostrar_distribucion(y_tipo, y_estado, le_tipo, le_estado, nombre):
         print(f"  {k}: {v}")
     
     mostrar_distribucion(y_tipo_train, y_estado_train, le_tipo, le_estado, "TRAIN")
-    mostrar_distribucion(y_tipo_val, y_estado_val, le_tipo, le_estado, "VALIDATION")
     mostrar_distribucion(y_tipo_test, y_estado_test, le_tipo, le_estado, "TEST")
 
 print("DIVISIÓN DE DATOS")

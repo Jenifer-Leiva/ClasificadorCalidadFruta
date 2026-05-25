@@ -10,6 +10,7 @@ from core.libs import ctk
 from framePrincipal import crear_frame_principal
 from frameResult import crear_frame_resultado
 from frameGaleria import crear_frame_galeria
+from ProcesamientoImagen import Prueba
 
 ctk.set_appearance_mode("dark")
 
@@ -32,6 +33,7 @@ def ocultar_todos():
 def mostrar_inicio():
     ocultar_todos()
     main_frame.pack(fill="both", expand=True, padx=40, pady=40)
+    Prueba()
 
 
 def mostrar_resultado():

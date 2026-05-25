@@ -10,3 +10,4 @@ mahotas
 seaborn
 statsmodels
 customtkinter
+joblib
