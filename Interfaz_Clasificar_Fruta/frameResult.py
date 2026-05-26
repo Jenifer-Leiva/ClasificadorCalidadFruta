@@ -70,6 +70,27 @@ def crear_frame_resultado(app, mostrar_resultado, volver_inicio):
 
     labelTitulo2.pack(anchor="w", pady=(20, 10))
 
+    # ------------------------
+    # RESULTADO PREDICCIÓN
+    # ------------------------
+    label_pred_fruit = ctk.CTkLabel(
+        frame_right2,
+        text="Fruta: --",
+        font=("Helvetica", 18, "bold"),
+        text_color="#FFFFFF",
+        justify="left"
+    )
+    label_pred_fruit.pack(anchor="w", pady=(0, 8))
+
+    label_pred_state = ctk.CTkLabel(
+        frame_right2,
+        text="Estado: --",
+        font=("Helvetica", 18, "bold"),
+        text_color="#FFFFFF",
+        justify="left"
+    )
+    label_pred_state.pack(anchor="w", pady=(0, 20))
+
 
     # ==================================================
     # CONTENIDO RESULTADO   
@@ -237,6 +258,56 @@ def crear_frame_resultado(app, mostrar_resultado, volver_inicio):
 
     podrido_container.grid(row=1, column=1, padx=10, pady=10, sticky="nsew")
 
+    def actualizar_resultado(ruta_imagen, probabilidades_fruit, probabilidades_state, prediccion_fruit, prediccion_state):
+        try:
+            print(f"\n🔄 Actualizando resultado...")
+            print(f"   Ruta: {ruta_imagen}")
+            print(f"   Pred fruit: {prediccion_fruit}, Probs: {probabilidades_fruit}")
+            print(f"   Pred state: {prediccion_state}, Probs: {probabilidades_state}")
+            
+            if ruta_imagen:
+                try:
+                    imagen = Image.open(ruta_imagen)
+                    nueva_img = ctk.CTkImage(
+                        light_image=imagen,
+                        size=(350, 350)
+                    )
+                    label_img2.configure(image=nueva_img)
+                    label_img2.image = nueva_img
+                    print("   ✓ Imagen actualizada")
+                except Exception as e:
+                    print(f"   ⚠️ Error al cargar imagen: {e}")
+
+            # Actualizar predicciones
+            label_pred_fruit.configure(text=f"Fruta: {prediccion_fruit}")
+            label_pred_state.configure(text=f"Estado: {prediccion_state}")
+            print(f"   ✓ Predicciones actualizadas")
+
+            # Actualizar probabilidades
+            try:
+                banana_prob = probabilidades_fruit[0]*100
+                mango_prob = probabilidades_fruit[1]*100
+                labelPBanana.configure(text=f"{banana_prob:.1f}%")
+                labelPMango.configure(text=f"{mango_prob:.1f}%")
+                print(f"   ✓ Probabilidades fruta: Banano {banana_prob:.1f}%, Mango {mango_prob:.1f}%")
+            except Exception as e:
+                print(f"   ⚠️ Error en probabilidades fruta: {e}")
+
+            try:
+                sano_prob = probabilidades_state[0]*100
+                podrido_prob = probabilidades_state[1]*100
+                labelPSano.configure(text=f"{sano_prob:.1f}%")
+                labelPPodrido.configure(text=f"{podrido_prob:.1f}%")
+                print(f"   ✓ Probabilidades estado: Sano {sano_prob:.1f}%, Podrido {podrido_prob:.1f}%")
+            except Exception as e:
+                print(f"   ⚠️ Error en probabilidades estado: {e}")
+            
+            print("✓ Resultado actualizado exitosamente\n")
+            
+        except Exception as e:
+            print(f"❌ Error en actualizar_resultado: {e}")
+            import traceback
+            traceback.print_exc()
 
     # ==================================================
     # BOTON VOLVER
@@ -254,4 +325,4 @@ def crear_frame_resultado(app, mostrar_resultado, volver_inicio):
 
     botonVolver.pack(anchor="w", pady=40)
 
-    return main_frame2
+    return main_frame2, actualizar_resultado

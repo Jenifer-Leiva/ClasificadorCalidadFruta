@@ -28,7 +28,7 @@ from modulo_modeloSVM import modelo_Completo
 def main():
     
     
-    """
+    
     # PREPARACION DE LOS DATOS
 
     # 1. Cargar dataset completo
@@ -59,7 +59,7 @@ def main():
         out_dir = os.path.join("./DatasetFrutasAumentadas", subset)
         augmentar_dataset(base_dir=base_dir, out_dir=out_dir, porcentaje=0.4)
 
-    """
+    
 
     
     # 6. Extracción de características de color,textura,forma

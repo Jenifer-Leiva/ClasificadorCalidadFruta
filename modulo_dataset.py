@@ -5,12 +5,23 @@ from core.libs import zipfile, np, cv2, os
 
 size = 128;
 def cargar_dataset(zip_path="DatasetFrutas.zip", extract_path="./DatasetFrutas", size=128):
-    # Extraer ZIP
-    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-        zip_ref.extractall(extract_path)
+    # Extraer ZIP solo si no existe el directorio de destino
+    if os.path.isdir(extract_path):
+        print(f"Dataset ya existe en {extract_path}. Se omite extracción.")
+    elif os.path.isfile(zip_path):
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(extract_path)
+        print("Dataset extraído desde ZIP.")
+    elif os.path.isdir(zip_path):
+        extract_path = zip_path
+        print(f"Usando dataset existente en carpeta: {zip_path}")
+    else:
+        raise FileNotFoundError(
+            f"No se encontró el dataset. Buscado zip en '{zip_path}' y carpeta en '{extract_path}'."
+        )
 
     print("DATASET")
-    print("Contenido extraído:", os.listdir(extract_path))
+    print("Contenido disponible:", os.listdir(extract_path))
 
     x, y = [], []
     label_map = {

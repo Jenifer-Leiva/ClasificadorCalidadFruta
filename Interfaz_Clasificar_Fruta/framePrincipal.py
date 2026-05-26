@@ -1,6 +1,52 @@
 from core.libs import ctk, Image
+from tkinter import filedialog, messagebox
 
 def crear_frame_principal(app, mostrar_resultado):
+    ruta_imagen = None
+
+    # =================================================================================================
+    # FUNCION PARA CARGAR IMAGEN
+    # =================================================================================================
+
+    def seleccionar_imagen():
+        nonlocal ruta_imagen
+
+        ruta = filedialog.askopenfilename(
+            title="Seleccionar imagen",
+            filetypes=[
+                ("Imagenes", "*.png *.jpg *.jpeg *.bmp")
+            ]
+        )
+
+        if ruta:
+            print("Imagen seleccionada:", ruta)
+
+            # Abrir imagen
+            imagen = Image.open(ruta)
+
+            # Redimensionar
+            nueva_img = ctk.CTkImage(
+                light_image=imagen,
+                size=(350, 350)
+            )
+
+            # Actualizar label
+            label_img.configure(image=nueva_img)
+
+            # IMPORTANTE:
+            # guardar referencia para que no se borre
+            label_img.image = nueva_img
+        
+        ruta_imagen = ruta
+
+    def clasificar():
+        if not ruta_imagen:
+            messagebox.showwarning(
+                title="Imagen no seleccionada",
+                message="Por favor selecciona una imagen antes de clasificar."
+            )
+            return
+        mostrar_resultado(ruta_imagen)
 
 # =================================================================================================
 
@@ -102,18 +148,13 @@ def crear_frame_principal(app, mostrar_resultado):
     botonImg = ctk.CTkButton(
         frame_right,
         text="Seleccionar Imagen",
+        command=seleccionar_imagen,
         **boton_style
     )
 
     botonImg.pack(anchor="w", pady=10)
 
-    botonGaleria = ctk.CTkButton(
-        frame_right,
-        text="Seleccionar Galería",
-        **boton_style
-    )
 
-    botonGaleria.pack(anchor="w", pady=10)
 
     # ==================================================
     # BOTON PRINCIPAL
@@ -126,7 +167,7 @@ def crear_frame_principal(app, mostrar_resultado):
         corner_radius=20,
         width=220,
         height=55,
-        command=mostrar_resultado
+        command=clasificar
     )
 
     botonClasificar.pack(anchor="w", pady=40)

@@ -7,6 +7,8 @@ from sklearn.feature_extraction import image
 
 from core.libs import os,cv2, np, plt, mh, sns,pd, joblib# Para correción
 from sklearn.preprocessing import StandardScaler
+
+
 #--------------------------------------------------------
 # EXTRACCION DE CARACTERISTICAS DE COLOR Y TEXTURA
 #--------------------------------------------------------
@@ -27,8 +29,13 @@ def aplicar_en_mascara(img):
         #rgb_aug[mask] = rgb_mod[mask]
 
         return rgb, mask, alpha
-    
-    #return np.dstack((rgb_aug, alpha))
+
+    # Soporte para imágenes RGB/BGR sin canal alfa
+    rgb = img[:, :, :3]
+    gray = cv2.cvtColor(rgb, cv2.COLOR_BGR2GRAY) if rgb.shape[2] == 3 else rgb
+    _, mask = cv2.threshold(gray, 10, 255, cv2.THRESH_BINARY)
+    alpha = np.full(gray.shape, 255, dtype=np.uint8)
+    return rgb, mask.astype(bool), alpha
 
 def caracteristicas_color_hsv(img, mask, alpha):
 
@@ -80,7 +87,7 @@ def caracteristicas_color_hsv(img, mask, alpha):
     img_display = cv2.cvtColor(img_alpha, cv2.COLOR_RGBA2BGRA)
 
     # Visualización
-    plt.figure(figsize=(12, 5))
+    """plt.figure(figsize=(12, 5))
 
     plt.subplot(1, 2, 1)
     plt.imshow(img_display)
@@ -95,7 +102,7 @@ def caracteristicas_color_hsv(img, mask, alpha):
     plt.tight_layout()
     #plt.savefig(os.path.join("./galeria_resultados/Diagramas_pruebas", f"segmentacion_{fruta_estado}.png"))  
 
-    plt.show()
+    plt.show()"""
 
     # #print(np.unique(segmented_values_H))
     # print("Tonos dominantes (Hue):", dominant_hues)
@@ -245,20 +252,153 @@ def analizar_forma(img):
     return area, perimeter, circularidad, compacidad, excentricidad, hu_moments[0],hu_moments[1],hu_moments[2],hu_moments[3], hu_moments[4], hu_moments[5], hu_moments[6]
 
 
-def ProcesarImagen(imag):
+def ProcesarImagen(img):
 
     #Segmentar
+  
 
-    src = imag
+    src = img
+
+    # =====================================================
+    # CARGAR IMAGEN
+    # =====================================================
+
+    imag = cv2.imread(src, cv2.IMREAD_COLOR)
+
+    if imag is None:
+        return None
+
+    imag = cv2.cvtColor(imag, cv2.COLOR_BGR2RGB)
+
+    imag = cv2.resize(imag, (128, 128))
+
+    # =====================================================
+    # LIMPIEZA DE RUIDO
+    # =====================================================
+
+    img_gauss = cv2.GaussianBlur(imag, (3, 3), 0)
+    img_gauss_median = cv2.medianBlur(img_gauss, 5)
+
+    # =====================================================
+    # KMEANS SEGMENTACION
+    # =====================================================
+
+    img_data = img_gauss_median.reshape(-1, 3)
+
+    kmeans = KMeans(
+        n_clusters=2,
+        random_state=42,
+        n_init=10
+    )
+
+    kmeans.fit(img_data)
+
+    segmented_labels = kmeans.labels_
+
+    # Detectar fondo automáticamente
+    cluster_centers = kmeans.cluster_centers_
+    mean_values = cluster_centers.mean(axis=1)
+
+    background_cluster_index = np.argmax(mean_values)
+
+    # Máscara fruta
+    fruit_mask = (
+        segmented_labels != background_cluster_index
+    ).reshape(128, 128).astype(np.uint8) * 255
+
+    # =====================================================
+    # LIMPIEZA MORFOLOGICA
+    # =====================================================
+
+    kernel = cv2.getStructuringElement(
+        cv2.MORPH_ELLIPSE,
+        (9, 9)
+    )
+
+    fruit_mask = cv2.morphologyEx(
+        fruit_mask,
+        cv2.MORPH_CLOSE,
+        kernel
+    )
+
+    # =====================================================
+    # RELLENAR HUECOS
+    # =====================================================
+
+    im_floodfill = fruit_mask.copy()
+
+    h, w = fruit_mask.shape[:2]
+
+    mask_flood = np.zeros((h + 2, w + 2), np.uint8)
+
+    cv2.floodFill(
+        im_floodfill,
+        mask_flood,
+        (0, 0),
+        255
+    )
+
+    im_floodfill_inv = cv2.bitwise_not(im_floodfill)
+
+    fruit_mask = fruit_mask | im_floodfill_inv
+
+    # =====================================================
+    # ELIMINAR COMPONENTES PEQUEÑOS
+    # =====================================================
+
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(
+        fruit_mask,
+        connectivity=8
+    )
+
+    mask_filtrada = np.zeros_like(fruit_mask)
+
+    for i in range(1, num_labels):
+
+        area = stats[i, cv2.CC_STAT_AREA]
+
+        if area >= 500:
+            mask_filtrada[labels == i] = 255
+
+    fruit_mask = mask_filtrada
+
+    # =====================================================
+    # CREAR IMAGEN RGBA
+    # =====================================================
+
+    rgba = cv2.cvtColor(imag, cv2.COLOR_RGB2RGBA)
+
+    rgba[..., 3] = fruit_mask
+
+    
+    src = img
     img = cv2.imread(src, cv2.IMREAD_UNCHANGED)
-    if img is not None:
-        rgb, mask, alpha = aplicar_en_mascara(img)
 
-        features_vector_img = []
-        features_vector_img.extend(caracteristicas_color_hsv(rgb, mask, alpha))
-        features_vector_img.extend(caracteristicas_textura_GLCM(rgb, mask))
-        features_vector_img.extend(caracteristicas_textura_Haralick(rgb, mask))
-        features_vector_img.extend(analizar_forma(rgb))
+    # =====================================================
+    # EXTRAER FEATURES
+    # =====================================================
+
+    rgb, mask, alpha = aplicar_en_mascara(img)
+
+    features_vector_img = []
+
+    features_vector_img.extend(
+        caracteristicas_color_hsv(rgb, mask, alpha)
+    )
+
+    features_vector_img.extend(
+        caracteristicas_textura_GLCM(rgb, mask)
+    )
+
+    features_vector_img.extend(
+        caracteristicas_textura_Haralick(rgb, mask)
+    )
+
+    features_vector_img.extend(
+        analizar_forma(rgb)
+    )
+
+    
 
     features_matrix = pd.DataFrame([features_vector_img], columns=["dominant_hue_1", "dominant_hue_2",
                                                                 "Saturation_1", "Saturation_2", "Value_1", "Value_2",
@@ -280,16 +420,16 @@ def ProcesarImagen(imag):
                                                                 "hu4","hu5","hu6","hu7"]) 
 
     #Normalizar características 
-    scaler = joblib.load('./Interfaz_Clasificar_Fruta/scaler.pkl')
+    scaler = joblib.load("Interfaz_Clasificar_Fruta/scaler.pkl")
     numeric_cols = features_matrix.columns
     #Matrices especificas para cada tipo de fruta y estado
     features_matrix_norm = features_matrix.copy()
     features_matrix_norm[numeric_cols] = scaler.transform(features_matrix[numeric_cols])
 
-    features_select_fruit = pd.read_csv("./Interfaz_Clasificar_Fruta/features_selected_fruit.csv")
+    features_select_fruit = pd.read_csv("Interfaz_Clasificar_Fruta/features_selected_fruit.csv")
     features_selected_fruit = features_select_fruit["feature"].tolist()
 
-    features_select_state = pd.read_csv("./Interfaz_Clasificar_Fruta/features_selected_state.csv")
+    features_select_state = pd.read_csv("Interfaz_Clasificar_Fruta/features_selected_state.csv")
     features_selected_state = features_select_state["feature"].tolist()
 
     features_matrix_filtrada_fruit = features_matrix_norm.drop(columns=[col for col in features_matrix_norm.columns if col not in features_selected_fruit])
@@ -304,8 +444,8 @@ def ProcesarImagen(imag):
 def PrediccionModelo(features_matrix_filtrada_fruit, features_matrix_filtrada_state):
 
     # Cargar el modelo entrenado para fruta
-    model_fruit = joblib.load('./Interfaz_Clasificar_Fruta/trained_model_fruit.pkl')
-    le_fruit= joblib.load("./Interfaz_Clasificar_Fruta/label_encoder_fruit.pkl")
+    model_fruit = joblib.load("Interfaz_Clasificar_Fruta/trained_model_fruit.pkl")
+    le_fruit= joblib.load("Interfaz_Clasificar_Fruta/label_encoder_fruit.pkl")
 
     prediction_fruit = model_fruit.predict(features_matrix_filtrada_fruit)
     probabilities_fruit = model_fruit.predict_proba(features_matrix_filtrada_fruit)
@@ -315,10 +455,10 @@ def PrediccionModelo(features_matrix_filtrada_fruit, features_matrix_filtrada_st
     print(f"Predicted Class: {prediction_fruit[0]}")
     print(f"Prediction Probabilities: {probabilities_fruit[0]}")
 
-    #Cargar el modelo entrenado para estado
+    #Cargar el modelo entrenadeo para estado
 
-    model_state = joblib.load('./Interfaz_Clasificar_Fruta/trained_model_state.pkl')
-    le_state = joblib.load("./Interfaz_Clasificar_Fruta/label_encoder_state.pkl")
+    model_state = joblib.load("Interfaz_Clasificar_Fruta/trained_model_state.pkl")
+    le_state = joblib.load("Interfaz_Clasificar_Fruta/label_encoder_state.pkl")
 
     prediction_state = model_state.predict(features_matrix_filtrada_state)
     probabilities_state = model_state.predict_proba(features_matrix_filtrada_state)
@@ -329,7 +469,3 @@ def PrediccionModelo(features_matrix_filtrada_fruit, features_matrix_filtrada_st
     print(f"Prediction Probabilities: {probabilities_state[0]}")
 
     return prediction_fruit, probabilities_fruit, prediction_state, probabilities_state
-
-def Prueba():
-    features_matrix_filtrada_fruit, features_matrix_filtrada_state = ProcesarImagen("./DatasetFrutasSegmentadas/test/Mango_Rotten/Mango_Rotten_0_crop.png")
-    PrediccionModelo(features_matrix_filtrada_fruit, features_matrix_filtrada_state)
