@@ -241,6 +241,7 @@ def Cross_Validation_completo():
 
 def modelo_Completo(base_dir_train_val, base_dir_train_test, base_dir_test):
 
+
     X_seg = []
     Y_fruit_seg = []
     Y_state_seg = []
@@ -353,20 +354,24 @@ def modelo_Completo(base_dir_train_val, base_dir_train_test, base_dir_test):
     features_matrix_fruit, features_select_fruit = Seleccion_Caracteristicas_Train(X_aug, Y_fruit_aug, 'fruit')
     pd.DataFrame(features_select_fruit, columns=["feature"]).to_csv("./Interfaz_Clasificar_Fruta/features_selected_fruit.csv", index=False)
     
-    #print("Extracción y seleccion de caracteristicas con train (70%) para fruit Validación")
+    print("Extracción y seleccion de caracteristicas con train (70%) para state")
+    features_matrix_state, features_select_state = Seleccion_Caracteristicas_Train(X_aug, Y_state_aug, 'state')
+    pd.DataFrame(features_select_state, columns=["feature"]).to_csv("./Interfaz_Clasificar_Fruta/features_selected_state.csv", index=False)
+
+    print("Extracción y seleccion de caracteristicas con train (70%) para fruit Validación")
     features_matrix_fruit_val, features_select_fruit_val = Seleccion_Caracteristicas_Train(X_seg, Y_fruit_seg, 'fruit', "./galeria_resultados/val")
 
-    #print("Extracción y seleccion de caracteristicas test (30%) para fruit")
+    print("Extracción y seleccion de caracteristicas test (30%) para fruit")
     features_matrix_test_fruit = Seleccion_Caracteristicas_Test(X_test, Y_fruit_test, "fruit", features_select_fruit)
 
     print("Extracción y seleccion de caracteristicas con train (70%) para state")
     features_matrix_state, features_select_state = Seleccion_Caracteristicas_Train(X_aug, Y_state_aug, 'state')
     pd.DataFrame(features_select_state, columns=["feature"]).to_csv("./Interfaz_Clasificar_Fruta/features_selected_state.csv", index=False)
 
-    #print("Extracción y seleccion de caracteristicas con train (70%) para state Validación")
+    print("Extracción y seleccion de caracteristicas con train (70%) para state Validación")
     features_matrix_state_val, features_select_state_val = Seleccion_Caracteristicas_Train(X_seg, Y_state_seg, 'state',"./galeria_resultados/val")
 
-    #print("Extracción y seleccion de caracteristicas test (30%) para state")
+    print("Extracción y seleccion de caracteristicas test (30%) para state")
     features_matrix_test_state = Seleccion_Caracteristicas_Test(X_test, Y_state_test, 'state', features_select_state)
 
     print("Fruit:", le_fruit.classes_)
@@ -375,9 +380,9 @@ def modelo_Completo(base_dir_train_val, base_dir_train_test, base_dir_test):
     joblib.dump(le_fruit, "./Interfaz_Clasificar_Fruta/label_encoder_fruit.pkl")
     joblib.dump(le_state, "./Interfaz_Clasificar_Fruta/label_encoder_state.pkl")
 
-    #Cross_Validation_completo()
+    Cross_Validation_completo()
 
-    #Test_completo()
+    Test_completo()
 
 
    

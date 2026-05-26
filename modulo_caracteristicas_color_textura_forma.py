@@ -392,7 +392,7 @@ def feature_selection(out_dir, features_matrix=None, first_column_name="fruit"):
     reduced_matrix = matrix_abs.where(np.triu(np.ones(matrix_abs.shape),k=1).astype(np.bool_))
 
     plt.figure(figsize=(10, 7))
-    sns.heatmap(reduced_matrix, annot=True, cmap="coolwarm", fmt=".2f", linewidths=0.5)
+    sns.heatmap(reduced_matrix, annot=False, cmap="coolwarm", fmt=".2f", linewidths=0.5)
     plt.title(f"Mapa de Calor Matriz de Correlación {first_column_name}")
     path_mc1 = os.path.join(out_dir, f"MatrizCorrelacion{first_column_name}")
     plt.savefig(path_mc1)
@@ -497,7 +497,7 @@ def extraer_caracteristicas_Final_Test(X_test, Y_test, features_selected, first_
     #print(le.classes_)
 
     #Normalizar características 
-    scaler = joblib.load('"./Interfaz_Clasificar_Fruta/scaler.pkl')
+    scaler = joblib.load('./Interfaz_Clasificar_Fruta/scaler.pkl')
     #scaler = StandardScaler()
     numeric_cols = features_matrix.columns.difference(
     [first_column_name], sort=False) # Excluir columnas de etiquetas
